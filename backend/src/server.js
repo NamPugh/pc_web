@@ -1,0 +1,42 @@
+import express from 'express';
+import { connectDB } from './config/db.js';
+import dotenv, { parse } from 'dotenv';
+import authRoute from './routes/authRoute.js';
+import cookieParser from 'cookie-parser';
+import userRoute from './routes/userRoute.js';
+import productRoute from './routes/productRoute.js'
+import cartRoute from './routes/cartRoute.js'
+import orderRoute from './routes/orderRoute.js';
+import categoryRoute from './routes/categoryRoute.js';
+import bannerRoute from './routes/bannerRoute.js';
+import brandRoute from './routes/brandRoute.js';
+import buildPcRoute from './routes/buildPcRoute.js';
+import reviewRoute from './routes/reviewRoute.js';
+import newsRoute from './routes/newsRoute.js';
+dotenv.config();
+const PORT = process.env.PORT || 5001;
+const app = express();
+
+// middlewares
+app.use(express.json());
+app.use(cookieParser());
+
+// public routes
+app.use('/api/auth', authRoute);
+app.use('/api/categories', categoryRoute);
+app.use('/api/brands', brandRoute);
+app.use('/api/carts', cartRoute);
+app.use('/api/orders', orderRoute);
+app.use('/api/build-pc', buildPcRoute);
+app.use('/api/banners', bannerRoute);
+app.use('/api/news', newsRoute);
+app.use('/api/reviews', reviewRoute);
+// private routes
+app.use('/api/users', userRoute);
+app.use('/api/products', productRoute);
+connectDB().then(() => {
+    app.listen(PORT, () => {
+    console.log(`Server bắt đầu trên cổng ${PORT}`);
+    });
+});
+
