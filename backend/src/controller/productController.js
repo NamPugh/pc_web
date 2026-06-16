@@ -87,6 +87,7 @@ export const getProducts = async (req, res) => {
             .populate("category", "name slug")
             .populate("brand", "name slug logo")
             .sort(sortOption)
+            .skip(skip)
             .limit(limit);
         const total = await Product.countDocuments(filter);
 
