@@ -1,4 +1,4 @@
-import { ArrowLeft, BarChart3, Boxes, Flame, Image, LayoutDashboard, LogOut, Menu, PackageCheck, PanelLeftClose, PanelLeftOpen, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BarChart3, Boxes, Flame, Image, LayoutDashboard, LayoutGrid, LogOut, Menu, PackageCheck, PanelLeftClose, PanelLeftOpen, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -8,11 +8,12 @@ import AdminOverview from "@/components/admin/AdminOverview";
 import BannerManager from "@/components/admin/BannerManager";
 import CatalogManager from "@/components/admin/CatalogManager";
 import DealManager from "@/components/admin/DealManager";
+import HomeSectionManager from "@/components/admin/HomeSectionManager";
 import OrderManager from "@/components/admin/OrderManager";
 import { useAuthStore } from "@/store/auth";
 import type { Order, OrderStats } from "@/types";
 
-type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners";
+type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners" | "home-sections";
 
 const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof LayoutDashboard }> = [
   { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: LayoutDashboard },
@@ -20,6 +21,7 @@ const navItems: Array<{ id: AdminView; label: string; helper: string; icon: type
   { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: Boxes },
   { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: Flame },
   { id: "banners", label: "Banner", helper: "Giao diện website", icon: Image },
+  { id: "home-sections", label: "Danh mục trang chủ", helper: "Banner & sản phẩm hiển thị", icon: LayoutGrid },
 ];
 
 export default function AdminPage() {
@@ -194,6 +196,7 @@ export default function AdminPage() {
             {view === "catalog" ? <CatalogManager /> : null}
             {view === "deals" ? <DealManager /> : null}
             {view === "banners" ? <BannerManager /> : null}
+            {view === "home-sections" ? <HomeSectionManager /> : null}
           </div>
         </main>
       </div>

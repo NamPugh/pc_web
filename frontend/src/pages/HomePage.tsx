@@ -2,17 +2,14 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
-  ShoppingCart,
   Star,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { cartApi, catalogApi, flashSaleApi, getErrorMessage, newsApi } from "@/api/client";
-import { useCartStore } from "@/store/cart";
-import { Button } from "@/components/ui/button";
-import type { Banner, Brand, FlashSale, FlashSaleItem, News, Product, ProductType } from "@/types";
+import { catalogApi, flashSaleApi, getErrorMessage, newsApi } from "@/api/client";
+import type { Banner, Brand, FlashSale, FlashSaleItem, HomeSection, News, Product, ProductType } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
@@ -35,62 +32,79 @@ const promotionBanners = Array.from({ length: 8 }, (_, index) => ({
 const isUsableBanner = (banner: Banner) =>
   Boolean(banner.image?.trim()) && !banner.image.includes("via.placeholder.com");
 
-const productSections: Array<{ title: string; type?: ProductType; keyword: string }> = [
-  { title: "PC Gaming nổi bật", type: "pc", keyword: "PC Gaming" },
-  { title: "PC Đồ Họa AI nổi bật", type: "pc", keyword: "PC đồ họa AI" },
-  { title: "Laptop - Máy Tính Xách Tay nổi bật", type: "laptop", keyword: "Laptop" },
-  { title: "Màn Hình Máy Tính nổi bật", type: "monitor", keyword: "Màn hình" },
-  { title: "VGA - Card màn hình nổi bật", type: "gpu", keyword: "RTX" },
-  { title: "Gaming Gears nổi bật", keyword: "Gaming Gear" },
+type ProductSection = {
+  title: string;
+  keyword: string;
+  categoryKeywords: string[];
+  fallbackTypes?: ProductType[];
+  image: string;
+};
+
+const productSections: ProductSection[] = [
+  { title: "PC Gaming nổi bật", keyword: "PC Gaming", categoryKeywords: ["pc gaming"], fallbackTypes: ["pc"], image: "/tnc/category-banners/cat_big_82_1764436058.jpg" },
+  { title: "PC Đồ Họa AI nổi bật", keyword: "PC đồ họa AI", categoryKeywords: ["pc do hoa ai"], image: "/tnc/category-banners/cat_big_210_1764436013.jpg" },
+  { title: "Laptop - Máy Tính Xách Tay nổi bật", keyword: "Laptop", categoryKeywords: ["laptop"], fallbackTypes: ["laptop"], image: "/tnc/category-banners/cat_big_79_1764436023.jpg" },
+  { title: "Màn Hình Máy Tính nổi bật", keyword: "Màn hình", categoryKeywords: ["man hinh", "monitor"], fallbackTypes: ["monitor"], image: "/tnc/category-banners/cat_big_68_1764436032.jpg" },
+  { title: "VGA - Card màn hình nổi bật", keyword: "RTX", categoryKeywords: ["vga", "card man hinh"], fallbackTypes: ["gpu"], image: "/tnc/categories/vga.png" },
+  { title: "PlayStation 5 nổi bật", keyword: "PlayStation 5", categoryKeywords: ["may ps5", "playstation 5"], image: "/tnc/category-banners/cat_big_217_1764436040.jpg" },
+  {
+    title: "Gaming Gears nổi bật",
+    keyword: "Gaming Gear",
+    categoryKeywords: ["ghe gaming", "gaming gear", "ban phim", "chuot", "tai nghe"],
+    fallbackTypes: ["keyboard", "mouse", "headphone"],
+    image: "/tnc/category-banners/cat_big_78_1764436048.jpg",
+  },
 ];
 
-function ProductCard({ product, onAdd, dealMode = false }: { product: Product; onAdd: (productId: string) => void; dealMode?: boolean }) {
-  const hasActiveDeal =
-    dealMode &&
-    product.isDeal &&
-    Boolean(product.dealStartAt && product.dealEndAt) &&
-    (product.dealSold || 0) < (product.dealQuantity || 0) &&
-    (product.dealPrice || 0) > 0;
-  const displayPrice = hasActiveDeal ? product.dealPrice! : product.price;
-  const originalPrice = hasActiveDeal ? product.price : product.oldPrice;
-  const displayDiscount = hasActiveDeal
-    ? Math.round(((product.price - product.dealPrice!) / product.price) * 100)
-    : product.discount;
-  const dealRemaining = Math.max((product.dealQuantity || 0) - (product.dealSold || 0), 0);
+const normalizeText = (value: unknown) =>
+  String(value ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const belongsToSection = (product: Product, section: ProductSection) => {
+  const category = normalizeText(product.category?.name || product.category?.slug);
+  if (category) {
+    return section.categoryKeywords.some((keyword) => category.includes(keyword));
+  }
+  return Boolean(section.fallbackTypes?.includes(product.productType));
+};
+
+function ProductCard({ product }: { product: Product }) {
+  const displayDiscount = product.discount ||
+    (product.oldPrice && product.oldPrice > product.price
+      ? Math.round((1 - product.price / product.oldPrice) * 100)
+      : 0);
+  const rating = product.ratingAverage || 0;
 
   return (
-    <article className="group flex min-h-full flex-col overflow-hidden border border-[#ededed] bg-white transition hover:border-[#3278f6] hover:shadow-[0_8px_20px_rgba(50,120,246,0.14)]">
-      <Link to={`/products/${product._id}`} className="relative block h-[205px] bg-white p-3">
-        {displayDiscount ? <span className="absolute left-0 top-0 z-10 bg-[#fb4e4e] px-2 py-1 text-xs font-bold text-white">-{displayDiscount}%</span> : null}
-        {hasActiveDeal ? <span className="absolute right-0 top-0 z-10 bg-[#f97316] px-2 py-1 text-[10px] font-bold uppercase text-white">Giờ vàng</span> : null}
-        <img className="h-full w-full object-contain transition duration-300 group-hover:scale-105" src={product.images?.[0] || "/icons.svg"} alt={product.name} loading="lazy" />
+    <article className="group relative flex min-h-full min-w-[250px] flex-col overflow-hidden border border-[#e5e7eb] bg-white transition duration-200 after:pointer-events-none after:absolute after:inset-0 after:z-30 after:border-[4px] after:border-transparent after:content-[''] hover:z-10 hover:after:border-[#3278f6]">
+      <Link to={`/products/${product._id}`} className="relative block aspect-square overflow-hidden bg-white p-0.5">
+        <span className="absolute left-0 top-0 z-10 bg-[#66ff19] px-2 py-1 text-[11px] font-bold text-black">Best Choice</span>
+        <img className="block h-full max-h-full w-full max-w-full object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} loading="lazy" />
       </Link>
-      <div className="flex flex-1 flex-col border-t-2 border-[#ededed] p-3">
-        <Link to={`/products/${product._id}`} className="line-clamp-2 min-h-10 text-sm font-bold leading-5 text-[#29324e] transition hover:text-[#fb4e4e]">
+      <div className="flex flex-1 flex-col border-t border-[#e5e7eb] p-3">
+        <Link to={`/products/${product._id}`} className="line-clamp-2 min-h-11 text-[15px] font-semibold leading-[22px] text-[#35405d] transition hover:text-[#3278f6]">
           {product.name}
         </Link>
-        <div className="mt-2 flex items-center gap-1 text-xs text-[#f5bf02]">
-          <Star className="size-3.5 fill-current" />
-          <span>{product.ratingAverage?.toFixed(1) || "4.8"}</span>
-          <span className="text-[#8d94ac]">·</span>
-          <span className="text-[#8d94ac]">Kho {product.stock}</span>
+        <div className="mt-3 flex items-center gap-1 text-xs">
+          <span className="flex text-[#f7b500]">
+            {Array.from({ length: 5 }, (_, index) => (
+              <Star className={`size-3 ${index < Math.round(rating) ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />
+            ))}
+          </span>
+          <span className="text-[#98a2b3]">{product.ratingCount || 0} đánh giá</span>
         </div>
         <div className="mt-auto pt-3">
-          <p className="text-base font-bold text-[#fb4e4e]">{currency.format(displayPrice)}</p>
-          {originalPrice ? <p className="text-xs text-[#8d94ac] line-through">{currency.format(originalPrice)}</p> : null}
-          {hasActiveDeal ? (
-            <div className="mt-2">
-              <div className="h-2 overflow-hidden rounded-full bg-[#fee2e2]">
-                <div className="h-full bg-gradient-to-r from-[#fb4e4e] to-[#f97316]" style={{ width: `${Math.min(((product.dealSold || 0) / Math.max(product.dealQuantity || 1, 1)) * 100, 100)}%` }} />
-              </div>
-              <p className="mt-1 text-[10px] font-bold uppercase text-[#fb4e4e]">Còn {dealRemaining} suất ưu đãi</p>
-            </div>
-          ) : null}
+          {product.oldPrice ? <p className="text-sm text-[#98a2b3] line-through">{currency.format(product.oldPrice)}</p> : <div className="h-5" />}
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <strong className="text-xl font-bold text-[#fb4e4e]">{currency.format(product.price)}</strong>
+            {displayDiscount > 0 ? <span className="border border-[#fb4e4e] px-1.5 py-0.5 text-[11px] font-semibold text-[#fb4e4e]">-{displayDiscount}%</span> : null}
+          </div>
         </div>
-        <Button className="mt-3 h-9 w-full rounded-none bg-[#3278f6] text-xs font-bold hover:bg-[#2860c5]" onClick={() => onAdd(product._id)}>
-          <ShoppingCart className="size-4" />
-          Thêm giỏ
-        </Button>
       </div>
     </article>
   );
@@ -154,6 +168,21 @@ function SectionHeader({ keyword, title }: { keyword: string; title: string }) {
   );
 }
 
+function CategoryBanner({ image, keyword, title }: { image: string; keyword: string; title: string }) {
+  return (
+    <Link
+      className="group relative hidden min-h-[390px] overflow-hidden bg-[#242d49] lg:block"
+      to={`/?keyword=${encodeURIComponent(keyword)}`}
+    >
+      <img
+        alt={title}
+        className="absolute inset-0 h-full w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        src={image}
+      />
+    </Link>
+  );
+}
+
 function DealClock({ endAt }: { endAt?: string | null }) {
   const [remaining, setRemaining] = useState(0);
 
@@ -188,7 +217,6 @@ function DealClock({ endAt }: { endAt?: string | null }) {
 }
 
 export default function HomePage() {
-  const setCart = useCartStore((state) => state.setCart);
   const dealSliderRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const searchKeyword = searchParams.get("keyword") || "";
@@ -197,6 +225,7 @@ export default function HomePage() {
   const [brands, setBrands] = useState<Brand[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [managedBanners, setManagedBanners] = useState<Banner[]>([]);
+  const [managedProductSections, setManagedProductSections] = useState<HomeSection[]>([]);
   const [keyword, setKeyword] = useState(searchKeyword);
   const [debouncedKeyword, setDebouncedKeyword] = useState(searchKeyword);
   const [brand, setBrand] = useState("");
@@ -218,7 +247,7 @@ export default function HomePage() {
       keyword: debouncedKeyword || undefined,
       brand: brand || undefined,
       sort: "created_desc",
-      limit: 32,
+      limit: 500,
     }),
     [brand, debouncedKeyword],
   );
@@ -252,16 +281,18 @@ export default function HomePage() {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const [brandRes, newsRes, bannerRes, dealRes] = await Promise.all([
+        const [brandRes, newsRes, bannerRes, dealRes, homeSectionRes] = await Promise.all([
           catalogApi.brands(),
           newsApi.list({ status: "published" }),
           catalogApi.banners(),
           flashSaleApi.active(),
+          catalogApi.homeSections({ isActive: true }),
         ]);
         setBrands(brandRes.data.data);
         setNews(newsRes.data.data);
         setManagedBanners(bannerRes.data.data);
         setActiveSale(dealRes.data.data);
+        setManagedProductSections(homeSectionRes.data.data);
       } catch (error) {
         toast.error(getErrorMessage(error));
       }
@@ -285,16 +316,6 @@ export default function HomePage() {
 
     void loadProducts();
   }, [params]);
-
-  const addToCart = async (productId: string) => {
-    try {
-      const { data } = await cartApi.add(productId);
-      setCart(data.data);
-      toast.success("Đã thêm vào giỏ hàng");
-    } catch (error) {
-      toast.error(getErrorMessage(error));
-    }
-  };
 
   const dealItems = activeSale?.items.filter((item) => item.sold < item.quantity) || [];
 
@@ -420,30 +441,29 @@ export default function HomePage() {
         </div>
       </section>
 
-      {productSections.map((section, sectionIndex) => {
-        const sectionProducts = products
-          .filter((product) => (section.type ? product.productType === section.type : ["keyboard", "mouse", "headphone"].includes(product.productType)))
-          .slice(0, 10);
-        const visibleProducts = sectionProducts.length ? sectionProducts : products.slice(0, 10);
+      {(managedProductSections.length ? managedProductSections : productSections).map((section) => {
+        const isManagedSection = "bannerImage" in section;
+        const sectionProducts = isManagedSection
+          ? section.products.slice(0, 4)
+          : products.filter((product) => belongsToSection(product, section)).slice(0, 4);
+        const sectionImage = isManagedSection ? section.bannerImage : section.image;
 
         return (
-          <div className="contents" key={section.title}>
-            {sectionIndex === 2 ? (
-              <Link className="mx-auto block max-w-[1600px] overflow-hidden border border-[#ededed] bg-white" to="/?keyword=PC%20Gaming">
-                <img className="max-h-[360px] w-full object-cover" src="/banners/pcweb-banner-sheet.png" alt="Khuyến mãi PC Gaming, RTX 5070 và Laptop Gaming" />
-              </Link>
-            ) : null}
-            <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
-              <SectionHeader title={section.title} keyword={section.keyword} />
+          <div className="contents" key={isManagedSection ? section._id : section.title}>
+            <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white px-4 py-5 sm:px-6">
+              <SectionHeader title={section.title} keyword={section.keyword || section.title} />
               {loading ? (
                 <div className="p-10 text-center text-[#8d94ac]">Đang tải sản phẩm...</div>
-              ) : visibleProducts.length === 0 ? (
+              ) : sectionProducts.length === 0 ? (
                 <div className="mt-5 border border-dashed border-[#ccc] p-10 text-center text-[#8d94ac]">Chưa có sản phẩm để hiển thị.</div>
               ) : (
-                <div className="mt-5 grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {visibleProducts.map((product) => (
-                    <ProductCard key={`${section.title}-${product._id}`} product={product} onAdd={addToCart} />
-                  ))}
+                <div className="mt-5 grid overflow-hidden border border-[#e5e7eb] lg:grid-cols-[260px_minmax(0,1fr)]">
+                  <CategoryBanner image={sectionImage} keyword={section.keyword || section.title} title={section.title} />
+                  <div className="grid gap-px overflow-x-auto bg-[#e5e7eb] [grid-template-columns:repeat(4,minmax(250px,1fr))]">
+                    {sectionProducts.map((product) => (
+                      <ProductCard key={`${section.title}-${product._id}`} product={product} />
+                    ))}
+                  </div>
                 </div>
               )}
             </section>

@@ -28,6 +28,19 @@ export type Banner = {
   updatedAt?: string;
 };
 
+export type HomeSection = {
+  _id: string;
+  title: string;
+  keyword?: string;
+  bannerImage: string;
+  category: Category;
+  products: Product[];
+  isActive: boolean;
+  sortOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Brand = {
   _id: string;
   name: string;

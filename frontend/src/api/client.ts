@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -37,6 +37,7 @@ export const catalogApi = {
   categories: () => api.get<ApiList<Category>>("/categories"),
   brands: () => api.get<ApiList<Brand>>("/brands"),
   banners: (params?: { position?: string; isActive?: boolean }) => api.get<ApiList<Banner>>("/banners", { params }),
+  homeSections: (params?: { isActive?: boolean }) => api.get<ApiList<HomeSection>>("/home-sections", { params }),
 };
 
 export const cartApi = {
@@ -112,6 +113,25 @@ export const adminApi = {
   updateBanner: (id: string, payload: Partial<Omit<Banner, "_id" | "createdAt" | "updatedAt">>) =>
     api.put<ApiItem<Banner>>(`/banners/${id}`, payload),
   deleteBanner: (id: string) => api.delete(`/banners/${id}`),
+  createHomeSection: (payload: {
+    title: string;
+    keyword?: string;
+    bannerImage: string;
+    category: string;
+    products: string[];
+    isActive: boolean;
+    sortOrder: number;
+  }) => api.post<ApiItem<HomeSection>>("/home-sections", payload),
+  updateHomeSection: (id: string, payload: Partial<{
+    title: string;
+    keyword: string;
+    bannerImage: string;
+    category: string;
+    products: string[];
+    isActive: boolean;
+    sortOrder: number;
+  }>) => api.put<ApiItem<HomeSection>>(`/home-sections/${id}`, payload),
+  deleteHomeSection: (id: string) => api.delete(`/home-sections/${id}`),
   uploadBanner: (file: File) => {
     const formData = new FormData();
     formData.append("image", file);

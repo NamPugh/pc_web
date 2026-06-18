@@ -15,6 +15,7 @@ import buildPcRoute from './routes/buildPcRoute.js';
 import reviewRoute from './routes/reviewRoute.js';
 import newsRoute from './routes/newsRoute.js';
 import flashSaleRoute from './routes/flashSaleRoute.js';
+import homeSectionRoute from './routes/homeSectionRoute.js';
 import errorMiddleware from './middlewares/errorMiddleware.js';
 dotenv.config();
 const PORT = process.env.PORT || 5001;
@@ -35,6 +36,7 @@ app.use('/api/build-pc', buildPcRoute);
 app.use('/api/banners', bannerRoute);
 app.use('/api/news', newsRoute);
 app.use('/api/flash-sales', flashSaleRoute);
+app.use('/api/home-sections', homeSectionRoute);
 app.use('/api/reviews', reviewRoute);
 // private routes
 app.use('/api/users', userRoute);
