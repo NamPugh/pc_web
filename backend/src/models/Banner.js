@@ -22,6 +22,10 @@ const bannerSchema = new mongoose.Schema(
     isActive: {
       type: Boolean,
       default: true
+    },
+    sortOrder: {
+      type: Number,
+      default: 0
     }
   },
   { timestamps: true }
@@ -29,4 +33,3 @@ const bannerSchema = new mongoose.Schema(
 
 const Banner = mongoose.model("Banner", bannerSchema);
 export default Banner;
-

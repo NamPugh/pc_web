@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, News, Order, Product, ProductType, Review, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -36,7 +36,7 @@ export const catalogApi = {
   product: (id: string) => api.get<ApiItem<Product>>(`/products/${id}`),
   categories: () => api.get<ApiList<Category>>("/categories"),
   brands: () => api.get<ApiList<Brand>>("/brands"),
-  banners: () => api.get<ApiList<Banner>>("/banners"),
+  banners: (params?: { position?: string; isActive?: boolean }) => api.get<ApiList<Banner>>("/banners", { params }),
 };
 
 export const cartApi = {
@@ -78,10 +78,21 @@ export const newsApi = {
 };
 
 export const adminApi = {
+  orders: () => api.get<ApiList<Order>>("/orders"),
+  orderStats: () => api.get<ApiItem<OrderStats>>("/orders/stats"),
+  updateOrder: (
+    id: string,
+    payload: { orderStatus?: Order["orderStatus"]; paymentStatus?: Order["paymentStatus"] },
+  ) => api.put<ApiItem<Order>>(`/orders/${id}/status`, payload),
   createProduct: (payload: Omit<Partial<Product>, "category" | "brand"> & { name: string; price: number; category: string; brand?: string }) =>
     api.post<ApiItem<Product>>("/products", payload),
   updateProduct: (id: string, payload: Partial<Product>) => api.put<ApiItem<Product>>(`/products/${id}`, payload),
   deleteProduct: (id: string) => api.delete(`/products/${id}`),
   createCategory: (payload: { name: string; image?: string }) => api.post<ApiItem<Category>>("/categories", payload),
   createBrand: (payload: { name: string; logo?: string }) => api.post<ApiItem<Brand>>("/brands", payload),
+  createBanner: (payload: Omit<Banner, "_id" | "createdAt" | "updatedAt">) =>
+    api.post<ApiItem<Banner>>("/banners", payload),
+  updateBanner: (id: string, payload: Partial<Omit<Banner, "_id" | "createdAt" | "updatedAt">>) =>
+    api.put<ApiItem<Banner>>(`/banners/${id}`, payload),
+  deleteBanner: (id: string) => api.delete(`/banners/${id}`),
 };

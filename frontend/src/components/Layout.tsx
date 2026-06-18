@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown, Headphones, LifeBuoy, Mail, MapPin, MonitorCog, Newspaper, Search, ShieldCheck, ShoppingCart, UserRound } from "lucide-react";
+import { Boxes, ChevronDown, ChevronRight, Cpu, Gamepad2, Headphones, Laptop, Mail, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router";
@@ -7,17 +7,32 @@ import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 
 const navItems = [
-  { to: "/build-pc", label: "Xây dựng cấu hình PC", icon: MonitorCog },
-  { to: "/?keyword=PC%20Gaming", label: "PC Gaming", icon: Boxes },
-  { to: "/?keyword=PC%20%C4%90%E1%BB%93%20H%E1%BB%8Da%20AI", label: "PC Đồ Họa AI", icon: Boxes },
-  { to: "/?keyword=Laptop%20Gaming", label: "Laptop Gaming", icon: Search },
-  { to: "/?keyword=M%C3%A0n%20h%C3%ACnh%20gaming", label: "Màn hình gaming", icon: Search },
-  { to: "/?keyword=RTX%205070", label: "RTX 5070", icon: ShieldCheck },
-  { to: "/news", label: "Tin tức", icon: Newspaper },
-  { to: "/support", label: "Hỗ trợ", icon: LifeBuoy },
+  { to: "/build-pc", label: "Build PC" },
+  { to: "/?keyword=PC%20Gaming", label: "PC Gaming" },
+  { to: "/?keyword=PC%20%C4%90%E1%BB%93%20H%E1%BB%8Da%20AI", label: "PC Đồ Họa AI" },
+  { to: "/?keyword=M%C3%A0n%20h%C3%ACnh%20gaming", label: "Màn Hình Gaming" },
+  { to: "/?keyword=Laptop%20Gaming", label: "Laptop Gaming" },
+  { to: "/?keyword=PS5%20Slim", label: "PS5 Slim" },
+  { to: "/?keyword=RTX%205060", label: "RTX 5060" },
+  { to: "/?keyword=RTX%205070", label: "RTX 5070" },
+  { to: "/?keyword=RTX%205080", label: "RTX 5080" },
+  { to: "/?keyword=RX%209070", label: "RX 9070" },
+  { to: "/?keyword=M%C3%A1y%20in", label: "Máy In" },
 ];
 
-const quickKeywords = ["Build PC", "PC gaming", "PC đồ họa AI", "Màn hình gaming", "Laptop Gaming", "PS5 Slim", "RTX 5060", "RTX 5070", "RTX 5080", "RX 9070", "Máy in"];
+const categoryItems = [
+  { label: "Xây dựng cấu hình PC", helper: "PC AMD / PC Cao Cấp", keyword: "Build PC", icon: Cpu },
+  { label: "PC Gaming", helper: "Giá tốt, sẵn hàng", keyword: "PC Gaming", icon: Boxes },
+  { label: "PC Đồ Họa AI", helper: "Tối ưu công việc", keyword: "PC Đồ Họa AI", icon: Cpu },
+  { label: "Laptop - Máy Tính Xách Tay", helper: "Gaming / Văn phòng", keyword: "Laptop", icon: Laptop },
+  { label: "Màn Hình Máy Tính", helper: "Gaming / Đồ họa", keyword: "Màn hình", icon: Monitor },
+  { label: "Máy chơi game - Console", helper: "PS5 / Nintendo Switch", keyword: "PS5", icon: Gamepad2 },
+  { label: "VGA - Card màn hình", helper: "RTX 5060 / RTX 5070", keyword: "RTX", icon: Boxes },
+  { label: "Linh kiện máy tính", helper: "CPU / Mainboard / RAM", keyword: "CPU RAM SSD", icon: PackageCheck },
+  { label: "Gaming Gears", helper: "Bàn phím / Chuột / Tai nghe", keyword: "Gaming Gear", icon: Headphones },
+  { label: "Thiết bị văn phòng", helper: "Máy in / Camera", keyword: "Máy in", icon: PackageCheck },
+  { label: "Thiết bị mạng", helper: "Router / Wifi / Switch", keyword: "Router Wifi", icon: PackageCheck },
+];
 
 const footerGroups = [
   {
@@ -81,144 +96,137 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f3f4f6] text-[#111111]">
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white shadow-sm">
-        <div className="border-b border-slate-200 bg-white text-[#333333]">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-1.5 text-[12px] font-semibold">
-            <div className="flex flex-wrap items-center gap-4">
-              <Link className="font-bold text-[#d71920] hover:underline" to="/">
-                Tất cả sản phẩm
-              </Link>
-              <span className="inline-flex items-center gap-1.5">
-                <Headphones className="size-3.5" />
-                0911111111
+    <div className="min-h-screen bg-[#f2f4f6] text-[#1e1e1e]">
+      <header className="sticky top-0 z-30 bg-[#29324e] shadow-[0_2px_8px_rgba(41,50,78,0.18)]">
+        <div className="bg-[#3278f6] text-white">
+          <div className="mx-auto flex h-10 max-w-[1600px] items-center justify-between px-4 text-[13px] font-bold">
+            <Link className="transition hover:text-[#fbff32]" to="/">Tất cả sản phẩm</Link>
+            <div className="flex items-center divide-x divide-white/25">
+              <span className="inline-flex items-center gap-2 px-4">
+                <Phone className="size-4" />
+                086 830 2123
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <Mail className="size-3.5" />
-                cskh@pcweb.local
+              <span className="hidden items-center gap-2 px-4 sm:inline-flex">
+                <Mail className="size-4" />
+                cskh@tncstore.vn
               </span>
-              <span className="inline-flex items-center gap-1.5">
-                <MapPin className="size-3.5" />
-                114 Chiến Thắng, Hà Nội
-              </span>
-              <span className="hidden items-center gap-1.5 sm:inline-flex">
-                <ShieldCheck className="size-3.5" />
-                Hàng chính hãng, giá tốt
-              </span>
-            </div>
-            <div className="hidden items-center gap-4 sm:flex">
-              <Link className="transition hover:text-[#d71920]" to="/support">Liên hệ</Link>
-              <Link className="transition hover:text-[#d71920]" to="/orders">Tra cứu đơn hàng</Link>
-              <Link className="transition hover:text-[#d71920]" to="/news">Tin công nghệ</Link>
             </div>
           </div>
         </div>
-        <div className="bg-white text-slate-950">
-          <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3">
-            <Link to="/" className="flex items-center gap-3 text-2xl font-bold tracking-tight">
-              <span className="grid h-12 w-[74px] place-items-center rounded bg-[#d71920] text-2xl font-bold text-white">PC</span>
-              <span className="hidden leading-none md:block">
-                PC Web
-                <span className="mt-1 block text-[10px] font-bold uppercase tracking-[0.2em] text-[#d71920]">Gaming store</span>
-              </span>
+
+        <div className="bg-[#29324e] text-white">
+          <div className="mx-auto grid max-w-[1600px] grid-cols-[100px_minmax(0,1fr)_auto] items-center gap-2 px-3 py-3 sm:grid-cols-[145px_minmax(0,1fr)_auto] sm:gap-4 sm:px-4 sm:py-4">
+            <Link to="/" className="grid h-11 w-[96px] -skew-x-12 place-items-center bg-white text-2xl font-black text-[#29324e] sm:h-14 sm:w-[135px] sm:text-4xl">
+              <span className="skew-x-12">TNC</span>
             </Link>
-            <Link to="/" className="hidden h-10 shrink-0 items-center gap-2 rounded bg-[#d71920] px-4 text-sm font-bold text-white transition hover:bg-[#b80d18] lg:inline-flex">
-              <Boxes className="size-4" />
-              Tất cả danh mục
-              <ChevronDown className="size-4" />
-            </Link>
-            <form className="order-last flex h-10 w-full flex-1 rounded border-2 border-[#d71920] bg-white lg:order-none lg:min-w-[380px]" onSubmit={handleSearch}>
+
+            <form className="flex h-12 min-w-0 bg-white" onSubmit={handleSearch}>
+              <button className="hidden w-[220px] shrink-0 items-center justify-between border-r border-[#d9d9d9] px-4 text-sm font-bold text-[#29324e] lg:inline-flex" type="button">
+                Tất cả danh mục
+                <ChevronDown className="size-4" />
+              </button>
               <input
-                className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-slate-900 outline-none placeholder:text-slate-400"
-                placeholder="Tìm PC gaming, ps5, rtx 5070, laptop gaming..."
+                className="min-w-0 flex-1 border-0 bg-transparent px-4 text-sm text-[#29324e] outline-none placeholder:text-[#8d94ac]"
+                placeholder="Nhập sản phẩm cần tìm..."
                 value={keyword}
                 onChange={(event) => setKeyword(event.target.value)}
               />
-              <button className="inline-flex w-12 items-center justify-center bg-[#d71920] text-white transition hover:bg-[#b80d18]" type="submit" aria-label="Tìm kiếm">
-                <Search className="size-4" />
+              <button className="inline-flex w-14 shrink-0 items-center justify-center bg-[#3278f6] text-white transition hover:bg-[#2860c5] sm:w-36 sm:gap-2" type="submit" aria-label="Tìm kiếm">
+                <span className="hidden text-sm font-bold sm:inline">Tìm kiếm</span>
+                <Search className="size-5" />
               </button>
             </form>
-            <div className="ml-auto flex items-center gap-2">
+
+            <div className="flex items-center">
               {ready && user ? (
-                <>
-                  <Link to="/account" className="hidden h-10 items-center gap-2 rounded bg-slate-100 px-3 text-sm font-bold text-slate-800 transition hover:bg-red-50 hover:text-[#d71920] sm:inline-flex">
-                    <UserRound className="size-4" />
-                    Tài khoản
+                <div className="flex items-center">
+                  <Link to="/account" className="hidden h-11 items-center gap-2 border-r border-white/30 px-4 text-sm font-bold text-white transition hover:text-[#fbff32] md:inline-flex">
+                    <UserRound className="size-5" />
+                    <span className="hidden xl:inline">Tài khoản</span>
                   </Link>
-                  <Button className="rounded bg-[#111] px-4 text-white hover:bg-black" onClick={handleSignOut}>
+                  <Button className="hidden rounded-none bg-transparent px-3 text-xs text-white/70 hover:bg-white/10 hover:text-white xl:inline-flex" onClick={handleSignOut}>
                     Đăng xuất
                   </Button>
-                </>
+                </div>
               ) : (
-                <>
-                  <Button className="rounded bg-slate-100 px-4 text-slate-900 hover:bg-red-50 hover:text-[#d71920]" asChild>
-                    <Link to="/signin"><UserRound className="size-4" /> Tài khoản</Link>
-                  </Button>
-                  <Button className="hidden rounded bg-[#111] px-4 text-white hover:bg-black sm:inline-flex" asChild>
-                    <Link to="/signup">Đăng ký</Link>
-                  </Button>
-                </>
+                <Link to="/signin" className="hidden h-11 items-center gap-2 border-r border-white/30 px-4 text-sm font-bold text-white transition hover:text-[#fbff32] md:inline-flex">
+                  <UserRound className="size-5" />
+                  <span className="hidden xl:inline">Tài khoản</span>
+                </Link>
               )}
               <NavLink
                 to="/cart"
                 className={({ isActive }) =>
-                  `relative inline-flex h-10 items-center gap-2 rounded px-3 text-sm font-bold transition ${
-                    isActive ? "bg-[#d71920] text-white" : "bg-slate-100 text-slate-800 hover:bg-red-50 hover:text-[#d71920]"
+                  `relative ml-1 inline-flex h-11 items-center gap-2 border border-white/20 px-2 text-sm font-bold transition sm:ml-3 sm:px-3 ${
+                    isActive ? "bg-[#3278f6] text-white" : "bg-white/5 text-white hover:bg-white/10"
                   }`
                 }
               >
-                <ShoppingCart className="size-4" />
-                Giỏ hàng
-                <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-[#d71920] text-[11px] text-white">0</span>
+                <ShoppingCart className="size-5" />
+                <span className="hidden xl:inline">Giỏ hàng</span>
+                <span className="grid size-5 place-items-center bg-[#fb4e4e] text-[11px] text-white">0</span>
               </NavLink>
             </div>
           </div>
         </div>
-        <div className="border-y border-slate-200 bg-[#f7f7f7]">
-          <nav className="mx-auto flex max-w-7xl items-center gap-1 overflow-x-auto px-4 py-2">
-            {navItems.map((item) => {
-              return (
+
+        <div className="border-t border-white/10 bg-[#29324e]">
+          <nav className="mx-auto flex h-11 max-w-[1600px] items-center overflow-visible px-4">
+            <div className="group relative hidden h-full shrink-0 items-center lg:flex">
+              <button className="inline-flex h-full items-center gap-2 border-r border-white/20 pr-5 text-sm font-bold uppercase text-white transition group-hover:text-[#fbff32]" type="button">
+                <Menu className="size-4" />
+                Danh mục sản phẩm
+                <ChevronDown className="size-4" />
+              </button>
+              <div className="invisible absolute left-0 top-full z-50 w-[310px] translate-y-2 border border-[#dedede] bg-[#3e4b75] opacity-0 shadow-xl transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                {categoryItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.label}
+                      className="flex w-full items-center gap-3 border-b border-[#8d94ac]/45 px-4 py-2.5 text-left text-white transition last:border-0 hover:bg-white hover:text-[#29324e]"
+                      onClick={() => navigate(`/?keyword=${encodeURIComponent(item.keyword)}`)}
+                      type="button"
+                    >
+                      <Icon className="size-4 shrink-0 text-[#72a3ff]" />
+                      <span className="min-w-0 flex-1">
+                        <b className="block truncate text-sm">{item.label}</b>
+                        <small className="block truncate text-[11px] font-semibold opacity-65">{item.helper}</small>
+                      </span>
+                      <ChevronRight className="size-4 shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex min-w-0 flex-1 items-center overflow-x-auto">
+              {navItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
-                    `inline-flex h-9 shrink-0 items-center gap-2 rounded px-3 text-sm font-bold transition ${
-                      isActive ? "bg-[#d71920] text-white" : "text-slate-700 hover:bg-white hover:text-[#d71920]"
+                    `inline-flex h-7 shrink-0 items-center border-r border-white/20 px-3 text-[13px] font-bold transition last:border-0 ${
+                      isActive ? "text-[#fbff32]" : "text-white hover:text-[#fbff32]"
                     }`
                   }
                 >
                   {item.label}
                 </NavLink>
-              );
-            })}
-            {user?.role === "admin" ? (
-              <NavLink
-                to="/admin"
-                className={({ isActive }) =>
-                  `inline-flex h-9 shrink-0 items-center rounded px-3 text-sm font-bold transition ${
-                    isActive ? "bg-[#d71920] text-white" : "text-slate-700 hover:bg-white hover:text-[#d71920]"
-                  }`
-                }
-              >
-                Admin
-              </NavLink>
-            ) : null}
+              ))}
+              {user?.role === "admin" ? (
+                <NavLink className="inline-flex h-7 shrink-0 items-center px-3 text-[13px] font-bold text-white hover:text-[#fbff32]" to="/admin">
+                  Admin
+                </NavLink>
+              ) : null}
+            </div>
           </nav>
         </div>
-        <div className="hidden border-b border-slate-200 bg-white md:block">
-          <div className="mx-auto flex max-w-7xl items-center gap-2 overflow-x-auto px-4 py-2 text-[12px] font-bold uppercase tracking-[0.06em]">
-            {quickKeywords.map((item) => (
-              <Link key={item} to={`/?keyword=${encodeURIComponent(item)}`} className="shrink-0 px-2 py-1 text-slate-700 transition hover:text-[#d71920]">
-                {item}
-              </Link>
-            ))}
-          </div>
-        </div>
       </header>
-      <main className="mx-auto w-full max-w-7xl px-4 py-4 text-left">
+      <main className="mx-auto w-full max-w-[1600px] px-3 py-0 text-left">
         <Outlet />
       </main>
-      <footer className="mt-8 border-t border-slate-800 bg-[#111111] text-white">
+      <footer className="mt-8 border-t border-[#222] bg-[#1e1e1e] text-white">
         <div className="border-b border-white/10">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 md:flex-row md:items-center md:justify-between">
             <div>
@@ -226,15 +234,15 @@ export default function Layout() {
               <p className="mt-1 text-sm text-white/60">Nhận deal PC gaming, VGA, laptop và gaming gear mới nhất.</p>
             </div>
             <form className="flex w-full max-w-md overflow-hidden rounded bg-white">
-              <input className="min-w-0 flex-1 px-4 text-sm text-slate-900 outline-none" placeholder="Email của bạn" />
-              <button className="bg-[#d71920] px-5 text-sm font-bold text-white">Đăng ký</button>
+              <input className="min-w-0 flex-1 px-4 text-sm text-[#29324e] outline-none" placeholder="Email của bạn" />
+              <button className="bg-[#3278f6] px-5 text-sm font-bold text-white">Đăng ký</button>
             </form>
           </div>
         </div>
         <div className="mx-auto grid max-w-7xl gap-7 px-4 py-8 lg:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div className="space-y-4">
             <Link to="/" className="inline-flex items-center gap-3 text-xl font-bold tracking-tight">
-              <span className="grid size-11 place-items-center rounded bg-[#d71920] text-white">PC</span>
+              <span className="grid size-11 place-items-center bg-[#3278f6] text-white">PC</span>
               PC Web
             </Link>
             <p className="max-w-sm text-sm leading-6 text-white/70">

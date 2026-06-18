@@ -59,45 +59,45 @@ export default function ProductDetailPage() {
   };
 
   if (loading) {
-    return <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">Đang tải chi tiết...</div>;
+    return <div className="rounded-lg border border-[#ededed] bg-white p-8 text-center text-[#8d94ac] shadow-sm">Đang tải chi tiết...</div>;
   }
 
   if (!product) {
-    return <div className="rounded-lg border border-slate-200 bg-white p-8 text-center text-slate-500 shadow-sm">Không tìm thấy sản phẩm.</div>;
+    return <div className="rounded-lg border border-[#ededed] bg-white p-8 text-center text-[#8d94ac] shadow-sm">Không tìm thấy sản phẩm.</div>;
   }
 
   const specs = product.specs ? Object.entries(product.specs).slice(0, 8) : [];
 
   return (
     <section className="space-y-4">
-      <div className="rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-500 shadow-sm">
-        <Link className="text-[#d71920] hover:underline" to="/">Trang chủ</Link>
+      <div className="rounded-lg border border-[#ededed] bg-white px-4 py-3 text-sm font-semibold text-[#8d94ac] shadow-sm">
+        <Link className="text-[#D91605] hover:underline" to="/">Trang chủ</Link>
         <span className="mx-2">/</span>
         <span>{product.category?.name || "Sản phẩm"}</span>
         <span className="mx-2">/</span>
-        <span className="text-slate-900">{product.name}</span>
+        <span className="text-[#29324e]">{product.name}</span>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[430px_minmax(0,1fr)_300px]">
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="aspect-square rounded-md bg-slate-50 p-4">
+        <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
+          <div className="aspect-square rounded-md bg-[#f5f5f5] p-4">
             <img className="h-full w-full object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} />
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {(product.images?.length ? product.images : ["/icons.svg", "/icons.svg", "/icons.svg", "/icons.svg"]).slice(0, 4).map((image, index) => (
-              <div key={`${image}-${index}`} className="aspect-square rounded-md border border-slate-200 bg-slate-50 p-2">
+              <div key={`${image}-${index}`} className="aspect-square rounded-md border border-[#ededed] bg-[#f5f5f5] p-2">
                 <img className="h-full w-full object-contain" src={image} alt={`${product.name} ${index + 1}`} />
               </div>
             ))}
           </div>
         </div>
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#d71920]">
+        <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#D91605]">
             {product.category?.name || "Danh mục"} · {product.brand?.name || "Thương hiệu"}
           </p>
-          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-slate-950 sm:text-3xl">{product.name}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-[#29324e] sm:text-3xl">{product.name}</h1>
+          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#8d94ac]">
             <span className="inline-flex items-center gap-1 text-amber-500">
               <Star className="size-4 fill-current" />
               {product.ratingAverage || 0}
@@ -109,9 +109,9 @@ export default function ProductDetailPage() {
             <span>Kho {product.stock}</span>
           </div>
 
-          <div className="mt-5 rounded-md bg-red-50 p-4">
-            <p className="text-3xl font-bold text-[#d71920]">{currency.format(product.price)}</p>
-            {product.oldPrice ? <p className="mt-1 text-sm text-slate-400 line-through">{currency.format(product.oldPrice)}</p> : null}
+          <div className="mt-5 rounded-md bg-[#fff5f5] p-4">
+            <p className="text-3xl font-bold text-[#D91605]">{currency.format(product.price)}</p>
+            {product.oldPrice ? <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.oldPrice)}</p> : null}
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
@@ -120,8 +120,8 @@ export default function ProductDetailPage() {
               "Bảo hành minh bạch",
               "Hỗ trợ build PC",
             ].map((item) => (
-              <div key={item} className="rounded-md border border-slate-200 bg-slate-50 p-3 text-sm font-semibold text-slate-700">
-                <CheckCircle2 className="mb-2 size-4 text-[#d71920]" />
+              <div key={item} className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-3 text-sm font-semibold text-[#29324e]">
+                <CheckCircle2 className="mb-2 size-4 text-[#D91605]" />
                 {item}
               </div>
             ))}
@@ -129,12 +129,12 @@ export default function ProductDetailPage() {
 
           {specs.length > 0 ? (
             <div className="mt-5">
-              <h2 className="text-lg font-bold tracking-tight text-slate-950">Thông số chính</h2>
-              <div className="mt-3 overflow-hidden rounded-md border border-slate-200">
+              <h2 className="text-lg font-bold tracking-tight text-[#29324e]">Thông số chính</h2>
+              <div className="mt-3 overflow-hidden rounded-md border border-[#ededed]">
                 {specs.map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-[140px_minmax(0,1fr)] border-b border-slate-100 last:border-b-0">
-                    <span className="bg-slate-50 px-3 py-2 text-sm font-bold text-slate-600">{key}</span>
-                    <span className="px-3 py-2 text-sm text-slate-700">{String(value)}</span>
+                  <div key={key} className="grid grid-cols-[140px_minmax(0,1fr)] border-b border-[#ededed] last:border-b-0">
+                    <span className="bg-[#f5f5f5] px-3 py-2 text-sm font-bold text-[#444]">{key}</span>
+                    <span className="px-3 py-2 text-sm text-[#29324e]">{String(value)}</span>
                   </div>
                 ))}
               </div>
@@ -143,18 +143,18 @@ export default function ProductDetailPage() {
         </div>
 
         <aside className="space-y-4 lg:sticky lg:top-44 lg:self-start">
-          <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-bold tracking-tight text-slate-950">Đặt mua nhanh</h2>
+          <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
+            <h2 className="text-lg font-bold tracking-tight text-[#29324e]">Đặt mua nhanh</h2>
             <div className="mt-4 flex items-center gap-2">
               <Button size="icon-sm" variant="outline" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
                 <Minus className="size-4" />
               </Button>
-              <input className="h-9 w-16 rounded-md border border-slate-200 text-center text-sm font-bold" min={1} type="number" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))} />
+              <input className="h-9 w-16 rounded-md border border-[#ededed] text-center text-sm font-bold" min={1} type="number" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))} />
               <Button size="icon-sm" variant="outline" onClick={() => setQuantity((current) => current + 1)}>
                 <Plus className="size-4" />
               </Button>
             </div>
-            <Button className="mt-4 h-11 w-full rounded-md bg-[#d71920] hover:bg-[#b80d18]" onClick={() => void addToCart()}>
+            <Button className="mt-4 h-11 w-full rounded-md bg-[#D91605] hover:bg-[#b51204]" onClick={() => void addToCart()}>
               Thêm vào giỏ
               <ArrowRight className="size-4" />
             </Button>
@@ -163,40 +163,40 @@ export default function ProductDetailPage() {
             </Button>
           </div>
 
-          <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm">
-            <h2 className="mb-3 text-lg font-bold tracking-tight text-slate-950">Chính sách bán hàng</h2>
-            <p className="mb-2 inline-flex items-center gap-2"><Truck className="size-4 text-[#d71920]" /> Giao hàng toàn quốc</p>
-            <p className="mb-2 inline-flex items-center gap-2"><CheckCircle2 className="size-4 text-[#d71920]" /> Kiểm tra hàng trước khi nhận</p>
-            <p className="inline-flex items-center gap-2"><Star className="size-4 text-[#d71920]" /> Tư vấn cấu hình miễn phí</p>
+          <div className="rounded-lg border border-[#ededed] bg-white p-4 text-sm text-[#444] shadow-sm">
+            <h2 className="mb-3 text-lg font-bold tracking-tight text-[#29324e]">Chính sách bán hàng</h2>
+            <p className="mb-2 inline-flex items-center gap-2"><Truck className="size-4 text-[#D91605]" /> Giao hàng toàn quốc</p>
+            <p className="mb-2 inline-flex items-center gap-2"><CheckCircle2 className="size-4 text-[#D91605]" /> Kiểm tra hàng trước khi nhận</p>
+            <p className="inline-flex items-center gap-2"><Star className="size-4 text-[#D91605]" /> Tư vấn cấu hình miễn phí</p>
           </div>
         </aside>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="border-b border-slate-200 pb-3 text-xl font-bold tracking-tight text-slate-950">Mô tả sản phẩm</h2>
-          <p className="mt-4 whitespace-pre-line text-sm leading-8 text-slate-700">{product.description || product.shortDescription || "Chưa có mô tả."}</p>
+        <section className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
+          <h2 className="border-b border-[#ededed] pb-3 text-xl font-bold tracking-tight text-[#29324e]">Mô tả sản phẩm</h2>
+          <p className="mt-4 whitespace-pre-line text-sm leading-8 text-[#29324e]">{product.description || product.shortDescription || "Chưa có mô tả."}</p>
         </section>
 
-        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="border-b border-slate-200 pb-3 text-xl font-bold tracking-tight text-slate-950">Đánh giá</h2>
+        <section className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
+          <h2 className="border-b border-[#ededed] pb-3 text-xl font-bold tracking-tight text-[#29324e]">Đánh giá</h2>
           <form onSubmit={submitReview} className="mt-4 grid gap-3">
-            <select className="h-10 rounded-md border border-slate-200 px-3 text-sm" value={reviewForm.rating} onChange={(event) => setReviewForm({ ...reviewForm, rating: Number(event.target.value) })}>
+            <select className="h-10 rounded-md border border-[#ededed] px-3 text-sm" value={reviewForm.rating} onChange={(event) => setReviewForm({ ...reviewForm, rating: Number(event.target.value) })}>
               {[5, 4, 3, 2, 1].map((rating) => (
                 <option key={rating} value={rating}>{rating} sao</option>
               ))}
             </select>
-            <textarea className="min-h-20 rounded-md border border-slate-200 p-3 text-sm" placeholder="Viết nhận xét..." value={reviewForm.comment} onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} />
-            <Button className="h-10 rounded-md bg-[#d71920] hover:bg-[#b80d18]">Gửi đánh giá</Button>
+            <textarea className="min-h-20 rounded-md border border-[#ededed] p-3 text-sm" placeholder="Viết nhận xét..." value={reviewForm.comment} onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} />
+            <Button className="h-10 rounded-md bg-[#D91605] hover:bg-[#b51204]">Gửi đánh giá</Button>
           </form>
           <div className="mt-4 space-y-2">
             {reviews.map((review) => (
-              <div key={review._id} className="rounded-md bg-slate-50 p-3">
-                <p className="text-sm font-bold text-slate-950">{review.rating} sao</p>
-                <p className="text-sm text-slate-600">{review.comment || "Không có bình luận."}</p>
+              <div key={review._id} className="rounded-md bg-[#f5f5f5] p-3">
+                <p className="text-sm font-bold text-[#29324e]">{review.rating} sao</p>
+                <p className="text-sm text-[#444]">{review.comment || "Không có bình luận."}</p>
               </div>
             ))}
-            {reviews.length === 0 ? <p className="text-sm text-slate-500">Chưa có đánh giá.</p> : null}
+            {reviews.length === 0 ? <p className="text-sm text-[#8d94ac]">Chưa có đánh giá.</p> : null}
           </div>
         </section>
       </div>

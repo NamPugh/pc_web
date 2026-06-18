@@ -133,3 +133,117 @@ export const cancelOrder = async (req, res) => {
     res.status(400).json({ success: false, message: "Lỗi hủy đơn hàng", error: error.message });
   }
 };
+
+export const getOrderStats = async (req, res) => {
+  try {
+    const now = new Date();
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startOfLastSevenDays = new Date(startOfToday);
+    startOfLastSevenDays.setDate(startOfLastSevenDays.getDate() - 6);
+
+    const orders = await Order.find()
+      .select("items totalPrice paymentStatus orderStatus createdAt")
+      .lean();
+
+    const activeOrders = orders.filter((order) => order.orderStatus !== "cancelled");
+    const completedOrders = orders.filter((order) => order.orderStatus === "completed");
+    const revenueOrders = orders.filter(
+      (order) => order.orderStatus === "completed" || order.paymentStatus === "paid"
+    );
+
+    const revenue = revenueOrders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const monthRevenue = revenueOrders
+      .filter((order) => new Date(order.createdAt) >= startOfMonth)
+      .reduce((sum, order) => sum + order.totalPrice, 0);
+    const previousMonthRevenue = revenueOrders
+      .filter((order) => {
+        const createdAt = new Date(order.createdAt);
+        return createdAt >= startOfPreviousMonth && createdAt < startOfMonth;
+      })
+      .reduce((sum, order) => sum + order.totalPrice, 0);
+
+    const statusCounts = ["pending", "confirmed", "shipping", "completed", "cancelled"].reduce(
+      (result, status) => {
+        result[status] = orders.filter((order) => order.orderStatus === status).length;
+        return result;
+      },
+      {}
+    );
+
+    const dailyRevenue = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(startOfLastSevenDays);
+      date.setDate(date.getDate() + index);
+      const nextDate = new Date(date);
+      nextDate.setDate(nextDate.getDate() + 1);
+
+      const dayOrders = revenueOrders.filter((order) => {
+        const createdAt = new Date(order.createdAt);
+        return createdAt >= date && createdAt < nextDate;
+      });
+
+      return {
+        date: date.toISOString(),
+        revenue: dayOrders.reduce((sum, order) => sum + order.totalPrice, 0),
+        orders: dayOrders.length
+      };
+    });
+
+    const topProductMap = new Map();
+    activeOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        const key = item.product?.toString() || item.name;
+        const current = topProductMap.get(key) || {
+          product: item.product || null,
+          name: item.name,
+          image: item.image || "",
+          quantity: 0,
+          revenue: 0
+        };
+        current.quantity += item.quantity;
+        current.revenue += item.price * item.quantity;
+        topProductMap.set(key, current);
+      });
+    });
+
+    const topProducts = [...topProductMap.values()]
+      .sort((first, second) => second.quantity - first.quantity)
+      .slice(0, 5);
+
+    const thisMonthOrders = activeOrders.filter(
+      (order) => new Date(order.createdAt) >= startOfMonth
+    );
+
+    res.json({
+      success: true,
+      data: {
+        totalRevenue: revenue,
+        monthRevenue,
+        previousMonthRevenue,
+        monthGrowth:
+          previousMonthRevenue > 0
+            ? ((monthRevenue - previousMonthRevenue) / previousMonthRevenue) * 100
+            : monthRevenue > 0
+              ? 100
+              : 0,
+        totalOrders: activeOrders.length,
+        monthOrders: thisMonthOrders.length,
+        completedOrders: completedOrders.length,
+        averageOrderValue:
+          revenueOrders.length > 0 ? revenue / revenueOrders.length : 0,
+        statusCounts,
+        dailyRevenue,
+        topProducts
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Lỗi lấy thống kê đơn hàng",
+      error: error.message
+    });
+  }
+};

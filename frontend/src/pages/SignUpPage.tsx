@@ -27,43 +27,43 @@ export default function SignUpPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#f3f4f6] px-4 py-10 text-slate-950">
+    <main className="min-h-screen bg-[#f2f4f6] px-4 py-10 text-[#29324e]">
       <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-6xl overflow-hidden rounded-lg border border-white/70 bg-white shadow-sm lg:grid-cols-[0.9fr_1.1fr]">
         <form onSubmit={onSubmit} className="flex items-center justify-center p-6 sm:p-10">
           <div className="w-full max-w-md">
             <div className="mb-8 flex items-center gap-3">
-              <span className="grid size-11 place-items-center rounded-md bg-[#d71920] text-white shadow-lg shadow-red-200">
+              <span className="grid size-11 place-items-center rounded-md bg-[#D91605] text-white shadow-lg shadow-[#fb4e4e]/20">
                 <Cpu className="size-5" />
               </span>
               <div>
-                <h1 className="m-0 text-2xl font-bold tracking-tight text-slate-950">Tạo tài khoản</h1>
-                <p className="text-sm text-slate-500">Bắt đầu mua linh kiện và lưu cấu hình PC.</p>
+                <h1 className="m-0 text-2xl font-bold tracking-tight text-[#29324e]">Tạo tài khoản</h1>
+                <p className="text-sm text-[#8d94ac]">Bắt đầu mua linh kiện và lưu cấu hình PC.</p>
               </div>
             </div>
             <div className="space-y-4">
-              <label className="block text-sm font-semibold text-slate-700">
+              <label className="block text-sm font-semibold text-[#29324e]">
                 Tên người dùng
                 <input
-                  className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-4 outline-none transition placeholder:text-slate-400 focus:border-[#d71920] focus:bg-white focus:ring-4 focus:ring-red-100"
+                  className="mt-2 h-12 w-full rounded-md border border-[#ededed] bg-[#f5f5f5] px-4 outline-none transition placeholder:text-[#8d94ac] focus:border-[#D91605] focus:bg-white focus:ring-4 focus:ring-[#fb4e4e]/20"
                   value={form.userName}
                   onChange={(event) => setForm({ ...form, userName: event.target.value })}
                   required
                 />
               </label>
-              <label className="block text-sm font-semibold text-slate-700">
+              <label className="block text-sm font-semibold text-[#29324e]">
                 Email
                 <input
-                  className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-4 outline-none transition placeholder:text-slate-400 focus:border-[#d71920] focus:bg-white focus:ring-4 focus:ring-red-100"
+                  className="mt-2 h-12 w-full rounded-md border border-[#ededed] bg-[#f5f5f5] px-4 outline-none transition placeholder:text-[#8d94ac] focus:border-[#D91605] focus:bg-white focus:ring-4 focus:ring-[#fb4e4e]/20"
                   type="email"
                   value={form.email}
                   onChange={(event) => setForm({ ...form, email: event.target.value })}
                   required
                 />
               </label>
-              <label className="block text-sm font-semibold text-slate-700">
+              <label className="block text-sm font-semibold text-[#29324e]">
                 Mật khẩu
                 <input
-                  className="mt-2 h-12 w-full rounded-md border border-slate-200 bg-slate-50 px-4 outline-none transition placeholder:text-slate-400 focus:border-[#d71920] focus:bg-white focus:ring-4 focus:ring-red-100"
+                  className="mt-2 h-12 w-full rounded-md border border-[#ededed] bg-[#f5f5f5] px-4 outline-none transition placeholder:text-[#8d94ac] focus:border-[#D91605] focus:bg-white focus:ring-4 focus:ring-[#fb4e4e]/20"
                   type="password"
                   minLength={6}
                   value={form.password}
@@ -72,20 +72,20 @@ export default function SignUpPage() {
                 />
               </label>
             </div>
-            <Button className="mt-6 h-12 w-full rounded-md bg-[#d71920] text-white hover:bg-[#b80d18]" disabled={loading}>
+            <Button className="mt-6 h-12 w-full rounded-md bg-[#D91605] text-white hover:bg-[#b51204]" disabled={loading}>
               {loading ? "Đang tạo..." : "Đăng ký"}
               <ArrowRight className="size-4" />
             </Button>
-            <p className="mt-4 text-center text-sm text-slate-500">
+            <p className="mt-4 text-center text-sm text-[#8d94ac]">
               Đã có tài khoản?{" "}
-              <Link className="font-semibold text-[#d71920] hover:underline" to="/signin">
+              <Link className="font-semibold text-[#D91605] hover:underline" to="/signin">
                 Đăng nhập
               </Link>
             </p>
           </div>
         </form>
 
-        <div className="relative hidden overflow-hidden bg-[#111111] p-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <div className="relative hidden overflow-hidden bg-[#1e1e1e] p-10 text-white lg:flex lg:flex-col lg:justify-between">
           <div className="absolute inset-0 opacity-15" style={{ backgroundImage: "radial-gradient(circle_at_top_right,white 0,transparent 30%),radial-gradient(circle_at_bottom_left,white 0,transparent 24%)" }} />
           <div className="relative">
             <p className="inline-flex rounded-md border border-white/20 bg-white/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-white/90">

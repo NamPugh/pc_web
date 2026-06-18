@@ -15,7 +15,7 @@ export const getBanners = async (req, res) => {
     if (req.query.position) filter.position = req.query.position;
     if (req.query.isActive) filter.isActive = req.query.isActive === "true";
 
-    const banners = await Banner.find(filter).sort({ createdAt: -1 });
+    const banners = await Banner.find(filter).sort({ sortOrder: 1, createdAt: -1 });
     res.json({ success: true, count: banners.length, data: banners });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi lấy banner", error: error.message });

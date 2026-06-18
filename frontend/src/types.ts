@@ -23,6 +23,9 @@ export type Banner = {
   link?: string;
   position?: string;
   isActive?: boolean;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type Brand = {
@@ -88,6 +91,7 @@ export type Cart = {
 
 export type Order = {
   _id: string;
+  user?: Pick<User, "_id" | "userName" | "email" | "phone"> | string;
   customerInfo: {
     fullName?: string;
     phone?: string;
@@ -105,7 +109,28 @@ export type Order = {
   paymentMethod: "cod" | "banking" | "momo" | "vnpay";
   paymentStatus: "unpaid" | "paid";
   orderStatus: "pending" | "confirmed" | "shipping" | "completed" | "cancelled";
+  note?: string;
   createdAt: string;
+};
+
+export type OrderStats = {
+  totalRevenue: number;
+  monthRevenue: number;
+  previousMonthRevenue: number;
+  monthGrowth: number;
+  totalOrders: number;
+  monthOrders: number;
+  completedOrders: number;
+  averageOrderValue: number;
+  statusCounts: Record<Order["orderStatus"], number>;
+  dailyRevenue: Array<{ date: string; revenue: number; orders: number }>;
+  topProducts: Array<{
+    product?: string;
+    name: string;
+    image?: string;
+    quantity: number;
+    revenue: number;
+  }>;
 };
 
 export type News = {
