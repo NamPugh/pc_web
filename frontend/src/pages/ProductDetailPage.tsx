@@ -16,6 +16,7 @@ export default function ProductDetailPage() {
   const { id = "" } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [activeImage, setActiveImage] = useState("/icons.svg");
   const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [loading, setLoading] = useState(true);
@@ -31,6 +32,7 @@ export default function ProductDetailPage() {
           flashSaleApi.active(),
         ]);
         setProduct(productRes.data.data);
+        setActiveImage(productRes.data.data.images?.[0] || "/icons.svg");
         setReviews(reviewRes.data.data);
         setDealItem(saleRes.data.data?.items.find((item) => item.product._id === id && item.sold < item.quantity) || null);
       } catch (error) {
@@ -91,13 +93,18 @@ export default function ProductDetailPage() {
       <div className="grid gap-4 lg:grid-cols-[430px_minmax(0,1fr)_300px]">
         <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
           <div className="aspect-square rounded-md bg-[#f5f5f5] p-4">
-            <img className="h-full w-full object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} />
+            <img className="h-full w-full object-contain" src={activeImage} alt={product.name} />
           </div>
-          <div className="mt-3 grid grid-cols-4 gap-2">
-            {(product.images?.length ? product.images : ["/icons.svg", "/icons.svg", "/icons.svg", "/icons.svg"]).slice(0, 4).map((image, index) => (
-              <div key={`${image}-${index}`} className="aspect-square rounded-md border border-[#ededed] bg-[#f5f5f5] p-2">
+          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+            {(product.images?.length ? product.images : ["/icons.svg"]).map((image, index) => (
+              <button
+                className={`aspect-square w-[calc(25%-6px)] min-w-[82px] rounded-md border bg-[#f5f5f5] p-2 transition ${activeImage === image ? "border-[#3278f6] ring-2 ring-[#3278f6]/15" : "border-[#ededed] hover:border-[#9cbcff]"}`}
+                key={`${image}-${index}`}
+                onClick={() => setActiveImage(image)}
+                type="button"
+              >
                 <img className="h-full w-full object-contain" src={image} alt={`${product.name} ${index + 1}`} />
-              </div>
+              </button>
             ))}
           </div>
         </div>

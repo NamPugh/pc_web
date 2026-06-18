@@ -1,7 +1,7 @@
 import { Boxes, ChevronDown, ChevronRight, Cpu, Gamepad2, Headphones, Laptop, LayoutDashboard, LogIn, LogOut, Mail, MapPin, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserPlus, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
-import { Link, NavLink, Outlet, useNavigate } from "react-router";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
 
 import { useAuthStore } from "@/store/auth";
 import { useCartStore } from "@/store/cart";
@@ -77,6 +77,7 @@ const footerGroups = [
 
 export default function Layout() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, ready, loadMe, signOut } = useAuthStore();
   const { cart, loadCart, resetCart } = useCartStore();
   const [keyword, setKeyword] = useState("");
@@ -246,10 +247,10 @@ export default function Layout() {
         <div className="border-t border-white/10 bg-[#29324e]">
           <nav className="mx-auto flex h-11 max-w-[1600px] items-center overflow-visible px-4">
             <div className="group relative hidden h-full shrink-0 items-center lg:flex">
-              <button className="inline-flex h-full items-center gap-2 border-r border-white/20 pr-5 text-sm font-bold uppercase text-white transition group-hover:text-[#fbff32]" type="button">
+              <button className="relative inline-flex h-full items-center gap-2 overflow-hidden px-4 text-sm font-bold uppercase text-white transition-all duration-300 after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:origin-left after:scale-x-0 after:bg-white after:transition-transform after:duration-300 group-hover:bg-white/10 group-hover:text-white group-hover:after:scale-x-100" type="button">
                 <Menu className="size-4" />
                 Danh mục sản phẩm
-                <ChevronDown className="size-4" />
+                <ChevronDown className="size-4 transition-transform duration-300 group-hover:rotate-180" />
               </button>
               <div className="invisible absolute left-0 top-full z-50 w-[310px] translate-y-2 border border-[#dedede] bg-[#3e4b75] opacity-0 shadow-xl transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                 {categoryItems.map((item) => {
@@ -273,20 +274,25 @@ export default function Layout() {
               </div>
             </div>
 
-            <div className="flex min-w-0 flex-1 items-center overflow-x-auto">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `inline-flex h-7 shrink-0 items-center border-r border-white/20 px-3 text-[13px] font-bold transition last:border-0 ${
-                      isActive ? "text-[#fbff32]" : "text-white hover:text-[#fbff32]"
-                    }`
-                  }
-                >
-                  {item.label}
-                </NavLink>
-              ))}
+            <div className="flex min-w-0 flex-1 items-center overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {navItems.map((item) => {
+                const [itemPath, itemSearch = ""] = item.to.split("?");
+                const isActive =
+                  location.pathname === itemPath &&
+                  (itemSearch ? location.search === `?${itemSearch}` : true);
+
+                return (
+                  <Link
+                    key={item.to}
+                    to={item.to}
+                    className={`group/nav relative inline-flex h-11 shrink-0 items-center overflow-hidden px-3 text-[13px] font-bold text-white transition-all duration-300 after:absolute after:inset-x-2 after:bottom-0 after:h-[3px] after:origin-left after:scale-x-0 after:bg-white after:transition-transform after:duration-300 hover:-translate-y-px hover:bg-white/10 hover:text-white hover:after:scale-x-100 ${
+                      isActive ? "bg-white/10 text-white after:scale-x-100" : ""
+                    }`}
+                  >
+                    <span className="relative transition-transform duration-300 group-hover/nav:-translate-y-px">{item.label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </nav>
         </div>
@@ -294,6 +300,7 @@ export default function Layout() {
       <main className="mx-auto w-full max-w-[1600px] px-3 py-0 text-left">
         <Outlet />
       </main>
+      {location.pathname !== "/cart" ? (
       <footer className="mt-8 border-t border-[#222] bg-[#1e1e1e] text-white">
         <div className="border-b border-white/10">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 md:flex-row md:items-center md:justify-between">
@@ -345,6 +352,7 @@ export default function Layout() {
           </div>
         </div>
       </footer>
+      ) : null}
     </div>
   );
 }

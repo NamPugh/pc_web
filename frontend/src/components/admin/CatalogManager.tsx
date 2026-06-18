@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { adminApi, catalogApi, getErrorMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import ProductExcelImporter from "@/components/admin/ProductExcelImporter";
 import type { Brand, Category, Product, ProductType } from "@/types";
 
 const productTypes: ProductType[] = ["cpu", "mainboard", "ram", "ssd", "hdd", "gpu", "psu", "case", "cooler", "monitor", "keyboard", "mouse", "headphone", "laptop", "pc", "other"];
@@ -29,6 +30,7 @@ export default function CatalogManager() {
     brand: "",
     productType: "other" as ProductType,
     shortDescription: "",
+    images: "",
   });
 
   const loadData = async () => {
@@ -128,6 +130,10 @@ export default function CatalogManager() {
         brand: product.brand || undefined,
         productType: product.productType,
         shortDescription: product.shortDescription.trim(),
+        images: product.images
+          .split(/[|;\n]+/)
+          .map((image) => image.trim())
+          .filter(Boolean),
       });
       setProduct({
         name: "",
@@ -137,6 +143,7 @@ export default function CatalogManager() {
         brand: brands[0]?._id || "",
         productType: "other",
         shortDescription: "",
+        images: "",
       });
       setShowProductForm(false);
       await loadData();
@@ -181,9 +188,12 @@ export default function CatalogManager() {
             <h2 className="text-xl font-bold text-[#1d2939]">Danh sách sản phẩm</h2>
             <p className="mt-1 text-sm text-[#8d94ac]">Quản lý catalog và tồn kho của cửa hàng.</p>
           </div>
-          <Button className="h-10 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={() => setShowProductForm((current) => !current)}>
-            <Plus className="size-4" /> Thêm sản phẩm
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <ProductExcelImporter brands={brands} categories={categories} onImported={loadData} products={products} />
+            <Button className="h-10 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={() => setShowProductForm((current) => !current)}>
+              <Plus className="size-4" /> Thêm sản phẩm
+            </Button>
+          </div>
           <label className="relative w-full">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
             <input className="h-11 w-full border border-[#d0d5dd] pl-10 pr-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm theo tên sản phẩm, thương hiệu hoặc danh mục..." value={search} />
@@ -206,6 +216,21 @@ export default function CatalogManager() {
               {productTypes.map((type) => <option key={type} value={type}>{type.toUpperCase()}</option>)}
             </select>
             <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" placeholder="Mô tả ngắn" value={product.shortDescription} onChange={(event) => setProduct({ ...product, shortDescription: event.target.value })} />
+            <textarea
+              className="min-h-24 border border-[#d0d5dd] bg-white p-3 text-sm md:col-span-2 xl:col-span-4"
+              onChange={(event) => setProduct({ ...product, images: event.target.value })}
+              placeholder={"Danh sách URL ảnh, mỗi ảnh một dòng\nhttps://.../anh-chinh.jpg\nhttps://.../anh-phu.jpg"}
+              value={product.images}
+            />
+            {product.images.trim() ? (
+              <div className="flex gap-2 overflow-x-auto md:col-span-2 xl:col-span-4">
+                {product.images.split(/[|;\n]+/).map((image) => image.trim()).filter(Boolean).slice(0, 8).map((image, index) => (
+                  <div className="grid size-20 shrink-0 place-items-center border border-[#d0d5dd] bg-white p-1" key={`${image}-${index}`}>
+                    <img className="h-full w-full object-contain" src={image} alt={`Xem trước ảnh ${index + 1}`} />
+                  </div>
+                ))}
+              </div>
+            ) : null}
             <div className="flex justify-end gap-2 md:col-span-2 xl:col-span-4">
               <Button className="rounded-none" type="button" variant="outline" onClick={() => setShowProductForm(false)}>Hủy</Button>
               <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]">Lưu sản phẩm</Button>

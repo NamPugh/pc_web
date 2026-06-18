@@ -1,9 +1,16 @@
 import Product from '../models/Product.js';
 import slugify from 'slugify';
 
+const normalizeImages = (images) => {
+    if(!images) return [];
+    const values = Array.isArray(images) ? images : String(images).split(/[|;\n]+/);
+    return [...new Set(values.map((image) => String(image).trim()).filter(Boolean))];
+};
+
 export const createProduct = async (req, res) => {
     try {
-        const data = req.body;
+        const data = {...req.body};
+        if(data.images !== undefined) data.images = normalizeImages(data.images);
         if(!data.slug && data.name) {
             data.slug = slugify(data.name, {
                 lower: true,
@@ -170,7 +177,8 @@ export const getProductBySlug = async (req, res) => {
 
 export const updateProduct = async (req, res) => {
     try {
-        const data = req.body;
+        const data = {...req.body};
+        if(data.images !== undefined) data.images = normalizeImages(data.images);
         if(data.isDeal) {
             const dealPrice = Number(data.dealPrice);
             const dealQuantity = Number(data.dealQuantity);

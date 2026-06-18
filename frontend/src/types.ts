@@ -56,6 +56,7 @@ export type ProductType =
 export type Product = {
   _id: string;
   name: string;
+  sku?: string;
   slug: string;
   price: number;
   oldPrice?: number;

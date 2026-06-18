@@ -7,6 +7,13 @@ const productSchema = new mongoose.Schema(
       required: [true, "Tên sản phẩm là bắt buộc"],
       trim: true
     },
+    sku: {
+      type: String,
+      trim: true,
+      uppercase: true,
+      sparse: true,
+      unique: true
+    },
     slug: {
       type: String,
       required: true,
