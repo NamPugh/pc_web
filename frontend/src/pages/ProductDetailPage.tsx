@@ -4,27 +4,35 @@ import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
 
-import { cartApi, catalogApi, getErrorMessage, reviewApi } from "@/api/client";
+import { cartApi, catalogApi, flashSaleApi, getErrorMessage, reviewApi } from "@/api/client";
 import { Button } from "@/components/ui/button";
-import type { Product, Review } from "@/types";
+import { useCartStore } from "@/store/cart";
+import type { FlashSaleItem, Product, Review } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
 export default function ProductDetailPage() {
+  const setCart = useCartStore((state) => state.setCart);
   const { id = "" } = useParams();
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [loading, setLoading] = useState(true);
+  const [dealItem, setDealItem] = useState<FlashSaleItem | null>(null);
 
   useEffect(() => {
     const loadProduct = async () => {
       setLoading(true);
       try {
-        const [productRes, reviewRes] = await Promise.all([catalogApi.product(id), reviewApi.list(id)]);
+        const [productRes, reviewRes, saleRes] = await Promise.all([
+          catalogApi.product(id),
+          reviewApi.list(id),
+          flashSaleApi.active(),
+        ]);
         setProduct(productRes.data.data);
         setReviews(reviewRes.data.data);
+        setDealItem(saleRes.data.data?.items.find((item) => item.product._id === id && item.sold < item.quantity) || null);
       } catch (error) {
         toast.error(getErrorMessage(error));
       } finally {
@@ -38,7 +46,8 @@ export default function ProductDetailPage() {
   const addToCart = async () => {
     if (!product) return;
     try {
-      await cartApi.add(product._id, quantity);
+      const { data } = await cartApi.add(product._id, quantity);
+      setCart(data.data);
       toast.success("Đã thêm sản phẩm vào giỏ");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -67,6 +76,7 @@ export default function ProductDetailPage() {
   }
 
   const specs = product.specs ? Object.entries(product.specs).slice(0, 8) : [];
+  const displayPrice = dealItem ? dealItem.dealPrice : product.price;
 
   return (
     <section className="space-y-4">
@@ -110,8 +120,13 @@ export default function ProductDetailPage() {
           </div>
 
           <div className="mt-5 rounded-md bg-[#fff5f5] p-4">
-            <p className="text-3xl font-bold text-[#D91605]">{currency.format(product.price)}</p>
-            {product.oldPrice ? <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.oldPrice)}</p> : null}
+            <p className="text-3xl font-bold text-[#D91605]">{currency.format(displayPrice)}</p>
+            {dealItem ? (
+              <>
+                <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.price)}</p>
+                <p className="mt-2 text-xs font-bold uppercase text-[#ea580c]">Deal giờ vàng · còn {dealItem.quantity - dealItem.sold} suất</p>
+              </>
+            ) : product.oldPrice ? <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.oldPrice)}</p> : null}
           </div>
 
           <div className="mt-5 grid gap-3 sm:grid-cols-3">

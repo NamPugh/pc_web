@@ -1,23 +1,68 @@
 import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
+import FlashSale from '../models/FlashSale.js';
 
 export const createOrder = async (req, res) => {
   try {
-    const { customerInfo, paymentMethod = "cod", note = "" } = req.body;
+    const { customerInfo, paymentMethod = "cod", note = "", selectedProductIds = [] } = req.body;
 
     const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
 
     if (!cart || cart.items.length === 0) {
       return res.status(400).json({ success: false, message: "Giỏ hàng đang trống" });
     }
- 
-    const orderItems = cart.items.map((item) => ({
+
+    const selectedIds = new Set(selectedProductIds.map(String));
+    const selectedCartItems = selectedIds.size
+      ? cart.items.filter((item) => selectedIds.has(item.product._id.toString()))
+      : cart.items;
+
+    if (selectedCartItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn ít nhất một sản phẩm để đặt hàng"
+      });
+    }
+
+    const unavailableItem = selectedCartItems.find(
+      (item) => !item.product || item.quantity > item.product.stock
+    );
+    if (unavailableItem) {
+      return res.status(400).json({
+        success: false,
+        message: `${unavailableItem.product?.name || "Sản phẩm"} không đủ số lượng trong kho`
+      });
+    }
+
+    for (const item of selectedCartItems.filter((entry) => entry.flashSale && entry.flashSaleItem)) {
+      const sale = await FlashSale.findById(item.flashSale);
+      const dealItem = sale?.items.id(item.flashSaleItem);
+      const now = new Date();
+      if (
+        !sale ||
+        sale.status !== "active" ||
+        now < sale.startAt ||
+        now >= sale.endAt ||
+        !dealItem ||
+        dealItem.sold + item.quantity > dealItem.quantity ||
+        item.price !== dealItem.dealPrice
+      ) {
+        return res.status(400).json({
+          success: false,
+          message: `${item.product.name} không còn đủ suất ưu đãi hoặc deal đã kết thúc`
+        });
+      }
+    }
+
+    const orderItems = selectedCartItems.map((item) => ({
       product: item.product._id,
       name: item.product.name,
       image: item.product.images?.[0] || "",
       price: item.price,
-      quantity: item.quantity
+      quantity: item.quantity,
+      flashSale: item.flashSale || null,
+      flashSaleItem: item.flashSaleItem || null
     }));
 
     const totalPrice = orderItems.reduce(
@@ -34,20 +79,36 @@ export const createOrder = async (req, res) => {
       note
     });
 
-    for (const item of cart.items) {
+    for (const item of selectedCartItems) {
       await Product.findByIdAndUpdate(item.product._id, {
-        $inc: { stock: -item.quantity, sold: item.quantity }
+        $inc: {
+          stock: -item.quantity,
+          sold: item.quantity
+        }
       });
+      if (item.flashSale && item.flashSaleItem) {
+        await FlashSale.updateOne(
+          { _id: item.flashSale, "items._id": item.flashSaleItem },
+          { $inc: { "items.$.sold": item.quantity } }
+        );
+      }
     }
 
-    cart.items = [];
-    cart.totalPrice = 0;
+    const orderedProductIds = new Set(selectedCartItems.map((item) => item.product._id.toString()));
+    cart.items = cart.items.filter(
+      (item) => !orderedProductIds.has(item.product._id.toString())
+    );
+    cart.totalPrice = cart.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
     await cart.save();
 
     res.status(201).json({
       success: true,
       message: "Tạo đơn hàng thành công",
-      data: order
+      data: order,
+      cart
     });
   } catch (error) {
     res.status(400).json({ success: false, message: "Lỗi tạo đơn hàng", error: error.message });

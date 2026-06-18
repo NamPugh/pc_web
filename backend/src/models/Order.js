@@ -22,6 +22,15 @@ const orderItemSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 1
+    },
+    flashSale: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FlashSale",
+      default: null
+    },
+    flashSaleItem: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
     }
   },
   { _id: false }
@@ -69,4 +78,3 @@ const orderSchema = new mongoose.Schema(
 
 const Order = mongoose.model("Order", orderSchema);
 export default Order;
-

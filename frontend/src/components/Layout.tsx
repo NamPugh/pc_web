@@ -1,10 +1,10 @@
-import { Boxes, ChevronDown, ChevronRight, Cpu, Gamepad2, Headphones, Laptop, Mail, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserRound } from "lucide-react";
+import { Boxes, ChevronDown, ChevronRight, Cpu, Gamepad2, Headphones, Laptop, LayoutDashboard, LogIn, LogOut, Mail, MapPin, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserPlus, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router";
 
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
+import { useCartStore } from "@/store/cart";
 
 const navItems = [
   { to: "/build-pc", label: "Build PC" },
@@ -78,14 +78,23 @@ const footerGroups = [
 export default function Layout() {
   const navigate = useNavigate();
   const { user, ready, loadMe, signOut } = useAuthStore();
+  const { cart, loadCart, resetCart } = useCartStore();
   const [keyword, setKeyword] = useState("");
+  const cartItemCount = cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
 
   useEffect(() => {
     void loadMe();
   }, [loadMe]);
 
+  useEffect(() => {
+    if (!ready) return;
+    if (user) void loadCart();
+    else resetCart();
+  }, [loadCart, ready, resetCart, user]);
+
   const handleSignOut = async () => {
     await signOut();
+    resetCart();
     navigate("/signin");
   };
 
@@ -138,22 +147,85 @@ export default function Layout() {
             </form>
 
             <div className="flex items-center">
-              {ready && user ? (
-                <div className="flex items-center">
-                  <Link to="/account" className="hidden h-11 items-center gap-2 border-r border-white/30 px-4 text-sm font-bold text-white transition hover:text-[#fbff32] md:inline-flex">
-                    <UserRound className="size-5" />
-                    <span className="hidden xl:inline">Tài khoản</span>
-                  </Link>
-                  <Button className="hidden rounded-none bg-transparent px-3 text-xs text-white/70 hover:bg-white/10 hover:text-white xl:inline-flex" onClick={handleSignOut}>
-                    Đăng xuất
-                  </Button>
-                </div>
-              ) : (
-                <Link to="/signin" className="hidden h-11 items-center gap-2 border-r border-white/30 px-4 text-sm font-bold text-white transition hover:text-[#fbff32] md:inline-flex">
+              <div className="group/account relative hidden md:block">
+                <Link
+                  to={ready && user ? "/account" : "/signin"}
+                  className="flex h-11 items-center gap-2 border-r border-white/30 px-4 text-sm font-bold text-white transition hover:text-[#fbff32] group-hover/account:text-[#fbff32]"
+                >
                   <UserRound className="size-5" />
-                  <span className="hidden xl:inline">Tài khoản</span>
+                  <span className="hidden max-w-32 truncate xl:inline">
+                    {ready && user ? user.userName : "Tài khoản"}
+                  </span>
+                  <ChevronDown className="size-3.5 transition group-hover/account:rotate-180" />
                 </Link>
-              )}
+
+                <div className="invisible absolute right-0 top-full z-50 w-64 translate-y-2 pt-2 opacity-0 transition duration-200 group-hover/account:visible group-hover/account:translate-y-0 group-hover/account:opacity-100">
+                  <div className="border border-[#e5e7eb] bg-white p-2 text-[#29324e] shadow-xl">
+                    {!ready ? (
+                      <div className="px-3 py-4 text-center text-sm text-[#8d94ac]">Đang tải tài khoản...</div>
+                    ) : user ? (
+                      <>
+                        <div className="border-b border-[#ededed] px-3 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <p className="truncate text-sm font-bold text-[#29324e]">{user.userName}</p>
+                            <span className={`shrink-0 px-2 py-0.5 text-[10px] font-bold uppercase ${user.role === "admin" ? "bg-[#eef4ff] text-[#3278f6]" : "bg-[#f2f4f7] text-[#667085]"}`}>
+                              {user.role === "admin" ? "Admin" : "Thành viên"}
+                            </span>
+                          </div>
+                          <p className="mt-0.5 truncate text-xs text-[#8d94ac]">{user.email}</p>
+                        </div>
+                        <p className="px-3 pb-1 pt-3 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Tài khoản của tôi</p>
+                        <Link className="mt-1 flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition hover:bg-[#eef4ff] hover:text-[#3278f6]" to="/account">
+                          <UserRound className="size-4" />
+                          Thông tin tài khoản
+                        </Link>
+                        <Link className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition hover:bg-[#eef4ff] hover:text-[#3278f6]" to="/account#shipping-address">
+                          <MapPin className="size-4" />
+                          Địa chỉ nhận hàng
+                        </Link>
+                        {user.role === "admin" ? (
+                          <>
+                            <div className="my-2 border-t border-[#ededed]" />
+                            <p className="px-3 pb-1 pt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Quản trị</p>
+                            <Link className="flex items-center gap-3 bg-[#f8faff] px-3 py-2.5 text-sm font-bold text-[#3278f6] transition hover:bg-[#eef4ff]" to="/admin">
+                              <LayoutDashboard className="size-4" />
+                              Quản lý hệ thống
+                              <ChevronRight className="ml-auto size-4" />
+                            </Link>
+                          </>
+                        ) : null}
+                        <button className="flex w-full items-center gap-3 border-t border-[#ededed] px-3 py-2.5 text-left text-sm font-semibold text-[#dc2626] transition hover:bg-[#fef2f2]" onClick={() => void handleSignOut()} type="button">
+                          <LogOut className="size-4" />
+                          Đăng xuất
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <div className="px-3 py-3">
+                          <p className="text-sm font-bold text-[#29324e]">Chào mừng đến PC Web</p>
+                          <p className="mt-1 text-xs leading-5 text-[#8d94ac]">Đăng nhập để quản lý đơn hàng và thông tin nhận hàng.</p>
+                        </div>
+                        <Link className="flex items-center gap-3 bg-[#3278f6] px-3 py-2.5 text-sm font-bold text-white transition hover:bg-[#2860c5]" to="/signin">
+                          <LogIn className="size-4" />
+                          Đăng nhập
+                        </Link>
+                        <Link className="mt-2 flex items-center gap-3 border border-[#d0d5dd] px-3 py-2.5 text-sm font-bold text-[#29324e] transition hover:border-[#3278f6] hover:text-[#3278f6]" to="/signup">
+                          <UserPlus className="size-4" />
+                          Đăng ký tài khoản
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                aria-label={user ? "Thông tin tài khoản" : "Đăng nhập"}
+                className="grid size-11 place-items-center border-r border-white/30 text-white md:hidden"
+                to={user ? "/account" : "/signin"}
+              >
+                <UserRound className="size-5" />
+              </Link>
               <NavLink
                 to="/cart"
                 className={({ isActive }) =>
@@ -163,8 +235,9 @@ export default function Layout() {
                 }
               >
                 <ShoppingCart className="size-5" />
-                <span className="hidden xl:inline">Giỏ hàng</span>
-                <span className="grid size-5 place-items-center bg-[#fb4e4e] text-[11px] text-white">0</span>
+                <span className="grid min-w-5 place-items-center bg-[#fb4e4e] px-1 text-[11px] text-white">
+                  {cartItemCount > 99 ? "99+" : cartItemCount}
+                </span>
               </NavLink>
             </div>
           </div>
@@ -214,11 +287,6 @@ export default function Layout() {
                   {item.label}
                 </NavLink>
               ))}
-              {user?.role === "admin" ? (
-                <NavLink className="inline-flex h-7 shrink-0 items-center px-3 text-[13px] font-bold text-white hover:text-[#fbff32]" to="/admin">
-                  Admin
-                </NavLink>
-              ) : null}
             </div>
           </nav>
         </div>

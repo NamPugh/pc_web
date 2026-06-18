@@ -15,6 +15,15 @@ const cartItemSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true
+    },
+    flashSale: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "FlashSale",
+      default: null
+    },
+    flashSaleItem: {
+      type: mongoose.Schema.Types.ObjectId,
+      default: null
     }
   },
   { _id: false }

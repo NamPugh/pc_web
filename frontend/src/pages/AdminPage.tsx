@@ -1,4 +1,4 @@
-import { BarChart3, Boxes, Image, LayoutDashboard, LogOut, Menu, PackageCheck, PanelLeftClose, PanelLeftOpen, ShieldCheck } from "lucide-react";
+import { ArrowLeft, BarChart3, Boxes, Flame, Image, LayoutDashboard, LogOut, Menu, PackageCheck, PanelLeftClose, PanelLeftOpen, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -7,22 +7,24 @@ import { adminApi, getErrorMessage } from "@/api/client";
 import AdminOverview from "@/components/admin/AdminOverview";
 import BannerManager from "@/components/admin/BannerManager";
 import CatalogManager from "@/components/admin/CatalogManager";
+import DealManager from "@/components/admin/DealManager";
 import OrderManager from "@/components/admin/OrderManager";
 import { useAuthStore } from "@/store/auth";
 import type { Order, OrderStats } from "@/types";
 
-type AdminView = "overview" | "orders" | "catalog" | "banners";
+type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners";
 
 const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof LayoutDashboard }> = [
   { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: LayoutDashboard },
   { id: "orders", label: "Đơn hàng", helper: "Xử lý và giao hàng", icon: PackageCheck },
   { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: Boxes },
+  { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: Flame },
   { id: "banners", label: "Banner", helper: "Giao diện website", icon: Image },
 ];
 
 export default function AdminPage() {
   const navigate = useNavigate();
-  const { user, ready, signOut } = useAuthStore();
+  const { user, ready, loadMe, signOut } = useAuthStore();
   const [view, setView] = useState<AdminView>("overview");
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -31,6 +33,10 @@ export default function AdminPage() {
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [loadingStats, setLoadingStats] = useState(true);
   const [orderFilter, setOrderFilter] = useState<Order["orderStatus"] | "all">("all");
+
+  useEffect(() => {
+    if (!ready) void loadMe();
+  }, [loadMe, ready]);
 
   const loadOrders = async () => {
     setLoadingOrders(true);
@@ -110,10 +116,10 @@ export default function AdminPage() {
   const currentNav = navItems.find((item) => item.id === view)!;
 
   return (
-    <div className="-mx-3 min-h-[calc(100vh-180px)] bg-[#f5f7fa]">
-      <div className="flex min-h-[calc(100vh-180px)]">
+    <div className="min-h-screen bg-[#f5f7fa]">
+      <div className="flex min-h-screen">
         <aside className={`hidden shrink-0 border-r border-[#e5e7eb] bg-[#101828] text-white transition-[width] duration-200 lg:block ${sidebarOpen ? "w-64" : "w-[76px]"}`}>
-          <div className="sticky top-[151px] flex h-[calc(100vh-151px)] flex-col">
+          <div className="sticky top-0 flex h-screen flex-col">
             <div className={`flex h-20 items-center border-b border-white/10 ${sidebarOpen ? "justify-between px-5" : "justify-center"}`}>
               <div className={`items-center gap-3 ${sidebarOpen ? "flex" : "hidden"}`}>
                 <span className="grid size-10 place-items-center rounded-lg bg-[#3278f6]"><ShieldCheck className="size-5" /></span>
@@ -138,6 +144,9 @@ export default function AdminPage() {
             </nav>
 
             <div className="border-t border-white/10 p-3">
+              <button className={`mb-1 flex h-12 w-full items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white ${sidebarOpen ? "gap-3 px-3" : "justify-center"}`} onClick={() => navigate("/")} title="Về trang bán hàng" type="button">
+                <ArrowLeft className="size-5 shrink-0" />{sidebarOpen ? <span className="text-sm font-bold">Về trang bán hàng</span> : null}
+              </button>
               <button className={`flex h-12 w-full items-center rounded-lg text-white/60 transition hover:bg-white/10 hover:text-white ${sidebarOpen ? "gap-3 px-3" : "justify-center"}`} onClick={() => void handleSignOut()} title="Đăng xuất" type="button">
                 <LogOut className="size-5 shrink-0" />{sidebarOpen ? <span className="text-sm font-bold">Đăng xuất</span> : null}
               </button>
@@ -154,6 +163,12 @@ export default function AdminPage() {
               return <button className={`flex h-14 w-full items-center gap-3 rounded-lg px-3 text-left ${view === item.id ? "bg-[#3278f6]" : "text-white/70"}`} key={item.id} onClick={() => changeView(item.id)} type="button"><Icon className="size-5" /><span><b className="block text-sm">{item.label}</b><small className="text-white/50">{item.helper}</small></span></button>;
             })}
           </nav>
+          <div className="mt-6 border-t border-white/10 pt-4">
+            <button className="flex h-12 w-full items-center gap-3 rounded-lg px-3 text-sm font-bold text-white/70 transition hover:bg-white/10 hover:text-white" onClick={() => navigate("/")} type="button">
+              <ArrowLeft className="size-5" />
+              Về trang bán hàng
+            </button>
+          </div>
         </aside>
 
         <main className="min-w-0 flex-1">
@@ -177,6 +192,7 @@ export default function AdminPage() {
             {view === "overview" ? <AdminOverview loading={loadingStats} onOpenOrders={openOrders} stats={stats} /> : null}
             {view === "orders" ? <OrderManager initialStatus={orderFilter} key={orderFilter} loading={loadingOrders} onReload={reloadOrdersAndStats} orders={orders} /> : null}
             {view === "catalog" ? <CatalogManager /> : null}
+            {view === "deals" ? <DealManager /> : null}
             {view === "banners" ? <BannerManager /> : null}
           </div>
         </main>

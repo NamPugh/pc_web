@@ -87,6 +87,29 @@ const productSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    dealPrice: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    dealStartAt: {
+      type: Date,
+      default: null
+    },
+    dealEndAt: {
+      type: Date,
+      default: null
+    },
+    dealQuantity: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
+    dealSold: {
+      type: Number,
+      default: 0,
+      min: 0
+    },
     ratingAverage: {
       type: Number,
       default: 0

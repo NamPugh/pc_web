@@ -1,5 +1,5 @@
-import { Eye, EyeOff, ImagePlus, Pencil, Plus, RotateCcw, Trash2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -65,6 +65,9 @@ export default function BannerManager() {
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadBanners = async () => {
     setLoading(true);
@@ -108,6 +111,11 @@ export default function BannerManager() {
     setForm(initialForm);
   };
 
+  const openNewBanner = () => {
+    resetForm();
+    document.querySelector("#banner-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const editBanner = (banner: Banner) => {
     setEditingId(banner._id);
     setForm({
@@ -135,14 +143,19 @@ export default function BannerManager() {
 
     try {
       if (editingId) {
-        await adminApi.updateBanner(editingId, payload);
+        const { data } = await adminApi.updateBanner(editingId, payload);
+        setBanners((current) =>
+          current.map((banner) => (banner._id === editingId ? data.data : banner)),
+        );
         toast.success("Đã cập nhật banner");
       } else {
-        await adminApi.createBanner(payload);
+        const { data } = await adminApi.createBanner(payload);
+        setBanners((current) => [...current, data.data].sort(
+          (first, second) => (first.sortOrder ?? 0) - (second.sortOrder ?? 0),
+        ));
         toast.success("Đã thêm banner");
       }
       resetForm();
-      await loadBanners();
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -151,12 +164,28 @@ export default function BannerManager() {
   };
 
   const toggleBanner = async (banner: Banner) => {
+    const nextActive = banner.isActive === false;
+    setTogglingIds((current) => new Set(current).add(banner._id));
+    setBanners((current) =>
+      current.map((item) => (item._id === banner._id ? { ...item, isActive: nextActive } : item)),
+    );
     try {
-      await adminApi.updateBanner(banner._id, { isActive: banner.isActive === false });
-      await loadBanners();
-      toast.success(banner.isActive === false ? "Đã bật banner" : "Đã ẩn banner");
+      const { data } = await adminApi.updateBanner(banner._id, { isActive: nextActive });
+      setBanners((current) =>
+        current.map((item) => (item._id === banner._id ? data.data : item)),
+      );
+      toast.success(nextActive ? "Đã bật banner" : "Đã ẩn banner");
     } catch (error) {
+      setBanners((current) =>
+        current.map((item) => (item._id === banner._id ? banner : item)),
+      );
       toast.error(getErrorMessage(error));
+    } finally {
+      setTogglingIds((current) => {
+        const next = new Set(current);
+        next.delete(banner._id);
+        return next;
+      });
     }
   };
 
@@ -166,10 +195,29 @@ export default function BannerManager() {
     try {
       await adminApi.deleteBanner(banner._id);
       if (editingId === banner._id) resetForm();
-      await loadBanners();
+      setBanners((current) => current.filter((item) => item._id !== banner._id));
       toast.success("Đã xóa banner");
     } catch (error) {
       toast.error(getErrorMessage(error));
+    }
+  };
+
+  const uploadImage = async (file?: File) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const { data } = await adminApi.uploadBanner(file);
+      setForm((current) => ({
+        ...current,
+        image: data.data.image,
+        title: current.title || file.name.replace(/\.[^.]+$/, "").replaceAll("-", " "),
+      }));
+      toast.success("Đã tải ảnh lên");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -219,7 +267,7 @@ export default function BannerManager() {
             <ImagePlus className="size-4" />
             Nạp banner mặc định
           </Button>
-          <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={resetForm}>
+          <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={openNewBanner}>
             <Plus className="size-4" />
             Banner mới
           </Button>
@@ -265,7 +313,7 @@ export default function BannerManager() {
                         <Pencil className="size-4" />
                       </button>
                       <button className="grid size-9 place-items-center text-[#29324e] transition hover:bg-[#f5f5f5]" onClick={() => void toggleBanner(banner)} title={banner.isActive === false ? "Hiện banner" : "Ẩn banner"} type="button">
-                        {banner.isActive === false ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                        {togglingIds.has(banner._id) ? <LoaderCircle className="size-4 animate-spin" /> : banner.isActive === false ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </button>
                       <button className="grid size-9 place-items-center text-[#fb4e4e] transition hover:bg-[#fff1f1]" onClick={() => void deleteBanner(banner)} title="Xóa banner" type="button">
                         <Trash2 className="size-4" />
@@ -286,7 +334,7 @@ export default function BannerManager() {
               </span>
               <div>
                 <h3 className="font-bold text-[#29324e]">{editingId ? "Sửa banner" : "Thêm banner"}</h3>
-                <p className="text-xs text-[#8d94ac]">Điền URL ảnh hoặc đường dẫn trong public.</p>
+                <p className="text-xs text-[#8d94ac]">Tải ảnh từ máy hoặc nhập đường dẫn có sẵn.</p>
               </div>
             </div>
             {editingId ? (
@@ -302,7 +350,24 @@ export default function BannerManager() {
               <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
             </label>
             <label className="block">
-              <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Đường dẫn ảnh</span>
+              <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Ảnh banner</span>
+              <input
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={(event) => void uploadImage(event.target.files?.[0])}
+                ref={fileInputRef}
+                type="file"
+              />
+              <button
+                className="mb-2 flex min-h-24 w-full flex-col items-center justify-center border border-dashed border-[#9cbcff] bg-[#f4f8ff] px-4 text-center transition hover:bg-[#eef4ff] disabled:cursor-wait"
+                disabled={uploading}
+                onClick={() => fileInputRef.current?.click()}
+                type="button"
+              >
+                {uploading ? <LoaderCircle className="size-6 animate-spin text-[#3278f6]" /> : <Upload className="size-6 text-[#3278f6]" />}
+                <b className="mt-2 text-sm text-[#3278f6]">{uploading ? "Đang tải ảnh..." : "Chọn ảnh từ máy"}</b>
+                <span className="mt-1 text-xs text-[#8d94ac]">JPG, PNG, WEBP hoặc GIF · tối đa 8 MB</span>
+              </button>
               <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" placeholder="/tnc/hero/banner.jpg hoặc https://..." value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} required />
             </label>
             {form.image ? (
@@ -332,7 +397,7 @@ export default function BannerManager() {
               <input checked={form.isActive} className="size-4 accent-[#3278f6]" onChange={(event) => setForm({ ...form, isActive: event.target.checked })} type="checkbox" />
               Hiển thị banner trên website
             </label>
-            <Button className="h-11 w-full rounded-none bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={saving}>
+            <Button className="h-11 w-full rounded-none bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={saving || uploading}>
               {saving ? "Đang lưu..." : editingId ? "Cập nhật banner" : "Thêm banner"}
             </Button>
           </div>

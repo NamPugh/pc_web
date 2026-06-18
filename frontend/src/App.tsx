@@ -31,8 +31,8 @@ function App() {
             <Route path="/news/:slug" element={<NewsDetailPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/support" element={<SupportPage />} />
-            <Route path="/admin" element={<AdminPage />} />
           </Route>
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/signin" element={<SignInPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

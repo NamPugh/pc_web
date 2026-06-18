@@ -70,16 +70,42 @@ export type Product = {
   specs?: Record<string, unknown>;
   isFeatured?: boolean;
   isDeal?: boolean;
+  dealPrice?: number;
+  dealStartAt?: string | null;
+  dealEndAt?: string | null;
+  dealQuantity?: number;
+  dealSold?: number;
   ratingAverage?: number;
   ratingCount?: number;
   sold?: number;
   status?: "active" | "inactive" | "out_of_stock";
 };
 
+export type FlashSaleItem = {
+  _id: string;
+  product: Product;
+  dealPrice: number;
+  quantity: number;
+  sold: number;
+};
+
+export type FlashSale = {
+  _id: string;
+  name: string;
+  startAt: string;
+  endAt: string;
+  status: "draft" | "active" | "inactive";
+  items: FlashSaleItem[];
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type CartItem = {
   product: Product;
   quantity: number;
   price: number;
+  flashSale?: string | null;
+  flashSaleItem?: string | null;
 };
 
 export type Cart = {

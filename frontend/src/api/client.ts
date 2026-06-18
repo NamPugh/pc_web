@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -52,6 +52,7 @@ export const orderApi = {
     customerInfo: { fullName: string; phone: string; email: string; address: string };
     paymentMethod: "cod" | "banking" | "momo" | "vnpay";
     note?: string;
+    selectedProductIds?: string[];
   }) => api.post<ApiItem<Order>>("/orders", payload),
   mine: () => api.get<ApiList<Order>>("/orders/my-orders"),
   cancel: (id: string) => api.put<ApiItem<Order>>(`/orders/${id}/cancel`),
@@ -77,6 +78,22 @@ export const newsApi = {
   bySlug: (slug: string) => api.get<ApiItem<News>>(`/news/slug/${slug}`),
 };
 
+export const flashSaleApi = {
+  active: () => api.get<ApiItem<FlashSale | null>>("/flash-sales/active"),
+  list: () => api.get<ApiList<FlashSale>>("/flash-sales"),
+  create: (payload: { name: string; startAt: string; endAt: string; status: FlashSale["status"] }) =>
+    api.post<ApiItem<FlashSale>>("/flash-sales", payload),
+  update: (id: string, payload: Partial<Pick<FlashSale, "name" | "startAt" | "endAt" | "status">>) =>
+    api.put<ApiItem<FlashSale>>(`/flash-sales/${id}`, payload),
+  remove: (id: string) => api.delete(`/flash-sales/${id}`),
+  addItem: (id: string, payload: { productId: string; dealPrice: number; quantity: number }) =>
+    api.post<ApiItem<FlashSale>>(`/flash-sales/${id}/items`, payload),
+  updateItem: (id: string, itemId: string, payload: { dealPrice?: number; quantity?: number }) =>
+    api.put<ApiItem<FlashSale>>(`/flash-sales/${id}/items/${itemId}`, payload),
+  removeItem: (id: string, itemId: string) =>
+    api.delete<ApiItem<FlashSale>>(`/flash-sales/${id}/items/${itemId}`),
+};
+
 export const adminApi = {
   orders: () => api.get<ApiList<Order>>("/orders"),
   orderStats: () => api.get<ApiItem<OrderStats>>("/orders/stats"),
@@ -95,4 +112,9 @@ export const adminApi = {
   updateBanner: (id: string, payload: Partial<Omit<Banner, "_id" | "createdAt" | "updatedAt">>) =>
     api.put<ApiItem<Banner>>(`/banners/${id}`, payload),
   deleteBanner: (id: string) => api.delete(`/banners/${id}`),
+  uploadBanner: (file: File) => {
+    const formData = new FormData();
+    formData.append("image", file);
+    return api.post<ApiItem<{ image: string }>>("/banners/upload", formData);
+  },
 };

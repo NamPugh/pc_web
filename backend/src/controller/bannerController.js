@@ -49,3 +49,17 @@ export const deleteBanner = async (req, res) => {
   }
 };
 
+export const uploadBanner = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ success: false, message: "Vui lòng chọn ảnh banner" });
+  }
+
+  res.status(201).json({
+    success: true,
+    message: "Tải ảnh banner thành công",
+    data: {
+      image: `/uploads/banners/${req.file.filename}`
+    }
+  });
+};
+

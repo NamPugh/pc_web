@@ -38,6 +38,7 @@ export const buildProductFilter = (query) => {
         maxPrice,
         isFeatured,
         isDeal,
+        activeDeal,
         status
     } = query;
 
@@ -51,6 +52,14 @@ export const buildProductFilter = (query) => {
     // trả chuỗi trên param
     if(isFeatured) filter.isFeatured = isFeatured === "true";
     if(isDeal) filter.isDeal = isDeal === "true";
+    if(activeDeal === "true") {
+        const now = new Date();
+        filter.isDeal = true;
+        filter.dealPrice = {$gt: 0};
+        filter.dealStartAt = {$lte: now};
+        filter.dealEndAt = {$gt: now};
+        filter.$expr = {$lt: ["$dealSold", "$dealQuantity"]};
+    }
     if(status) filter.status = status;
     if(minPrice || maxPrice) {
         filter.price = {};
@@ -162,6 +171,29 @@ export const getProductBySlug = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const data = req.body;
+        if(data.isDeal) {
+            const dealPrice = Number(data.dealPrice);
+            const dealQuantity = Number(data.dealQuantity);
+            const dealStartAt = new Date(data.dealStartAt);
+            const dealEndAt = new Date(data.dealEndAt);
+            const currentProduct = await Product.findById(req.params.id);
+
+            if(!currentProduct) {
+                return res.status(404).json({success: false, message: "Không tìm thấy sản phẩm"});
+            }
+            if(!dealPrice || dealPrice >= currentProduct.price) {
+                return res.status(400).json({success: false, message: "Giá deal phải lớn hơn 0 và thấp hơn giá bán"});
+            }
+            if(!dealQuantity || dealQuantity < 1) {
+                return res.status(400).json({success: false, message: "Số lượng deal phải lớn hơn 0"});
+            }
+            if(dealQuantity > currentProduct.stock) {
+                return res.status(400).json({success: false, message: "Số lượng deal không được vượt quá tồn kho"});
+            }
+            if(Number.isNaN(dealStartAt.getTime()) || Number.isNaN(dealEndAt.getTime()) || dealEndAt <= dealStartAt) {
+                return res.status(400).json({success: false, message: "Thời gian deal không hợp lệ"});
+            }
+        }
         if(data.name && !data.slug) {
             data.slug = slugify(
                 data.name,

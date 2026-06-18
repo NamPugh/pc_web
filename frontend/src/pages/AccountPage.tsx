@@ -85,7 +85,7 @@ export default function AccountPage() {
                 <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Số điện thoại</p>
                 <p className="mt-1 font-semibold text-[#29324e]">{user.phone || "Chưa cập nhật"}</p>
               </div>
-              <div className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-4">
+              <div className="scroll-mt-48 rounded-md border border-[#ededed] bg-[#f5f5f5] p-4" id="shipping-address">
                 <MapPin className="size-5 text-[#D91605]" />
                 <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Địa chỉ</p>
                 <p className="mt-1 line-clamp-1 font-semibold text-[#29324e]">{user.address || "Chưa cập nhật"}</p>

@@ -1,28 +1,18 @@
 import {
   ArrowRight,
-  Boxes,
   ChevronLeft,
   ChevronRight,
-  Cpu,
-  Flame,
-  Gamepad2,
-  Headphones,
-  Laptop,
-  Monitor,
-  MonitorCog,
-  PackageCheck,
-  Search,
   ShoppingCart,
   Star,
-  Zap,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { cartApi, catalogApi, getErrorMessage, newsApi } from "@/api/client";
+import { cartApi, catalogApi, flashSaleApi, getErrorMessage, newsApi } from "@/api/client";
+import { useCartStore } from "@/store/cart";
 import { Button } from "@/components/ui/button";
-import type { Banner, Brand, Category, News, Product, ProductType } from "@/types";
+import type { Banner, Brand, FlashSale, FlashSaleItem, News, Product, ProductType } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
@@ -34,32 +24,6 @@ const localBanners = [
   { _id: "tnc-hero-5", title: "Build PC ASUS rinh quà", image: "/tnc/hero/banner-build-pc-asus-rinh-qua-het-nac.jpg", link: "/?keyword=Build%20PC%20ASUS" },
   { _id: "tnc-hero-6", title: "ASUS Hiku", image: "/tnc/hero/banner-trang-chu-asus-hiku.jpg", link: "/?keyword=ASUS" },
   { _id: "tnc-hero-7", title: "Razer lên deal", image: "/tnc/hero/banner-razer-len-deal-gear-len-doi.png", link: "/?keyword=Razer" },
-];
-
-const categoryMenu = [
-  { label: "Xây dựng cấu hình PC", helper: "PC AMD / PC cao cấp", keyword: "Build PC", icon: MonitorCog },
-  { label: "PC Gaming", helper: "Giá tốt, sẵn hàng", keyword: "PC Gaming", icon: Cpu },
-  { label: "PC Đồ Họa AI", helper: "Tối ưu công việc", keyword: "PC đồ họa AI", icon: Zap },
-  { label: "Laptop - Máy Tính Xách Tay", helper: "Gaming / Văn phòng", keyword: "Laptop", icon: Laptop },
-  { label: "Màn Hình Máy Tính", helper: "Gaming / Đồ họa", keyword: "Màn hình", icon: Monitor },
-  { label: "Máy chơi game - Console", helper: "PS5 / Nintendo Switch", keyword: "PS5", icon: Gamepad2 },
-  { label: "VGA - Card màn hình", helper: "RTX 5060 / RTX 5070", keyword: "RTX", icon: Boxes },
-  { label: "Linh kiện máy tính", helper: "CPU / Mainboard / RAM", keyword: "CPU RAM SSD", icon: PackageCheck },
-  { label: "Gaming Gears", helper: "Bàn phím / Chuột / Tai nghe", keyword: "Gaming gear", icon: Headphones },
-  { label: "Thiết bị văn phòng", helper: "Máy in / Camera / Máy chấm công", keyword: "máy in", icon: PackageCheck },
-  { label: "Thiết bị mạng", helper: "Router / Wifi / Switch", keyword: "router wifi", icon: PackageCheck },
-  { label: "Khuyến Mãi", helper: "Deal sốc mỗi ngày", keyword: "deal", icon: Flame },
-];
-
-const featuredCategories = [
-  { title: "PC GAMING", subtitle: "Mua ngay - Giá đang rẻ", keyword: "PC Gaming", image: "/tnc/categories/pc-gaming.jpg" },
-  { title: "PC ĐỒ HỌA AI", subtitle: "Tối ưu công việc", keyword: "PC đồ họa AI", image: "/tnc/categories/pc-ai.jpg" },
-  { title: "MÀN HÌNH MÁY TÍNH", subtitle: "Thế giới màn hình giá rẻ", keyword: "Màn hình", image: "/tnc/categories/monitor.png" },
-  { title: "VGA - CARD MÀN HÌNH", subtitle: "Tổng kho VGA mới", keyword: "RTX", image: "/tnc/categories/vga.png" },
-  { title: "LAPTOP GAMING", subtitle: "Cấu hình khủng", keyword: "Laptop Gaming", image: "/tnc/categories/laptop.png" },
-  { title: "MÁY CHƠI GAME PS5", subtitle: "Chính hãng", keyword: "PS5 Slim", image: "/tnc/categories/ps5.jpg" },
-  { title: "NINTENDO SWITCH", subtitle: "Chơi game tuyệt đỉnh", keyword: "Nintendo Switch", image: "/tnc/categories/handheld.png" },
-  { title: "GHẾ GAMING", subtitle: "Hiện đại, tối ưu công năng", keyword: "Ghế gaming", image: "/tnc/categories/chair.png" },
 ];
 
 const promotionBanners = Array.from({ length: 8 }, (_, index) => ({
@@ -80,11 +44,25 @@ const productSections: Array<{ title: string; type?: ProductType; keyword: strin
   { title: "Gaming Gears nổi bật", keyword: "Gaming Gear" },
 ];
 
-function ProductCard({ product, onAdd }: { product: Product; onAdd: (productId: string) => void }) {
+function ProductCard({ product, onAdd, dealMode = false }: { product: Product; onAdd: (productId: string) => void; dealMode?: boolean }) {
+  const hasActiveDeal =
+    dealMode &&
+    product.isDeal &&
+    Boolean(product.dealStartAt && product.dealEndAt) &&
+    (product.dealSold || 0) < (product.dealQuantity || 0) &&
+    (product.dealPrice || 0) > 0;
+  const displayPrice = hasActiveDeal ? product.dealPrice! : product.price;
+  const originalPrice = hasActiveDeal ? product.price : product.oldPrice;
+  const displayDiscount = hasActiveDeal
+    ? Math.round(((product.price - product.dealPrice!) / product.price) * 100)
+    : product.discount;
+  const dealRemaining = Math.max((product.dealQuantity || 0) - (product.dealSold || 0), 0);
+
   return (
     <article className="group flex min-h-full flex-col overflow-hidden border border-[#ededed] bg-white transition hover:border-[#3278f6] hover:shadow-[0_8px_20px_rgba(50,120,246,0.14)]">
       <Link to={`/products/${product._id}`} className="relative block h-[205px] bg-white p-3">
-        {product.discount ? <span className="absolute left-0 top-0 z-10 bg-[#fb4e4e] px-2 py-1 text-xs font-bold text-white">-{product.discount}%</span> : null}
+        {displayDiscount ? <span className="absolute left-0 top-0 z-10 bg-[#fb4e4e] px-2 py-1 text-xs font-bold text-white">-{displayDiscount}%</span> : null}
+        {hasActiveDeal ? <span className="absolute right-0 top-0 z-10 bg-[#f97316] px-2 py-1 text-[10px] font-bold uppercase text-white">Giờ vàng</span> : null}
         <img className="h-full w-full object-contain transition duration-300 group-hover:scale-105" src={product.images?.[0] || "/icons.svg"} alt={product.name} loading="lazy" />
       </Link>
       <div className="flex flex-1 flex-col border-t-2 border-[#ededed] p-3">
@@ -98,13 +76,67 @@ function ProductCard({ product, onAdd }: { product: Product; onAdd: (productId: 
           <span className="text-[#8d94ac]">Kho {product.stock}</span>
         </div>
         <div className="mt-auto pt-3">
-          <p className="text-base font-bold text-[#fb4e4e]">{currency.format(product.price)}</p>
-          {product.oldPrice ? <p className="text-xs text-[#8d94ac] line-through">{currency.format(product.oldPrice)}</p> : null}
+          <p className="text-base font-bold text-[#fb4e4e]">{currency.format(displayPrice)}</p>
+          {originalPrice ? <p className="text-xs text-[#8d94ac] line-through">{currency.format(originalPrice)}</p> : null}
+          {hasActiveDeal ? (
+            <div className="mt-2">
+              <div className="h-2 overflow-hidden rounded-full bg-[#fee2e2]">
+                <div className="h-full bg-gradient-to-r from-[#fb4e4e] to-[#f97316]" style={{ width: `${Math.min(((product.dealSold || 0) / Math.max(product.dealQuantity || 1, 1)) * 100, 100)}%` }} />
+              </div>
+              <p className="mt-1 text-[10px] font-bold uppercase text-[#fb4e4e]">Còn {dealRemaining} suất ưu đãi</p>
+            </div>
+          ) : null}
         </div>
         <Button className="mt-3 h-9 w-full rounded-none bg-[#3278f6] text-xs font-bold hover:bg-[#2860c5]" onClick={() => onAdd(product._id)}>
           <ShoppingCart className="size-4" />
           Thêm giỏ
         </Button>
+      </div>
+    </article>
+  );
+}
+
+function DealProductCard({ item }: { item: FlashSaleItem }) {
+  const { product } = item;
+  const discount = product.price > item.dealPrice
+    ? Math.round(((product.price - item.dealPrice) / product.price) * 100)
+    : 0;
+  const remaining = Math.max(item.quantity - item.sold, 0);
+  const rating = product.ratingAverage || 0;
+
+  return (
+    <article className="group relative min-w-[230px] flex-1 border-r border-[#e5e7eb] bg-white last:border-r-0">
+      <span className="absolute left-0 top-0 z-10 bg-[#f97300] px-2 py-1 text-[11px] font-bold text-white">
+        Best choice
+      </span>
+      <Link className="block h-[240px] overflow-hidden p-5 pt-8" to={`/products/${product._id}`}>
+        <img
+          className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+          src={product.images?.[0] || "/icons.svg"}
+          alt={product.name}
+          loading="lazy"
+        />
+      </Link>
+      <div className="border-t border-[#e5e7eb] px-3 pb-3 pt-3">
+        <Link className="line-clamp-2 min-h-11 text-[15px] font-semibold leading-[22px] text-[#25304e] transition hover:text-[#3278f6]" to={`/products/${product._id}`}>
+          {product.name}
+        </Link>
+        <div className="mt-1 flex items-center gap-1 text-xs">
+          <span className={rating ? "text-[#f7b500]" : "text-[#d0d5dd]"}>
+            {"★★★★★"}
+          </span>
+          <span className="text-[#98a2b3]">{product.ratingCount || 0} đánh giá</span>
+        </div>
+        <p className="mt-2 text-sm text-[#98a2b3] line-through">{currency.format(product.price)}</p>
+        <div className="mt-0.5 flex items-center gap-2">
+          <strong className="text-xl font-bold text-[#fb4e4e]">{currency.format(item.dealPrice)}</strong>
+          {discount > 0 ? (
+            <span className="border border-[#fb4e4e] px-1.5 py-0.5 text-[11px] font-semibold text-[#fb4e4e]">-{discount}%</span>
+          ) : null}
+        </div>
+        <div className="mt-3 bg-[#ff9ca0] py-1 text-center text-xs font-bold text-white">
+          Còn lại: {remaining}
+        </div>
       </div>
     </article>
   );
@@ -122,13 +154,20 @@ function SectionHeader({ keyword, title }: { keyword: string; title: string }) {
   );
 }
 
-function DealClock() {
-  const [remaining, setRemaining] = useState(9 * 3600 + 26 * 60 + 16);
+function DealClock({ endAt }: { endAt?: string | null }) {
+  const [remaining, setRemaining] = useState(0);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setRemaining((value) => (value > 0 ? value - 1 : 0)), 1000);
-    return () => window.clearInterval(timer);
-  }, []);
+    const updateRemaining = () => {
+      setRemaining(endAt ? Math.max(Math.floor((new Date(endAt).getTime() - Date.now()) / 1000), 0) : 0);
+    };
+    const initialTimer = window.setTimeout(updateRemaining, 0);
+    const interval = window.setInterval(updateRemaining, 1000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
+  }, [endAt]);
 
   const hours = String(Math.floor(remaining / 3600)).padStart(2, "0");
   const minutes = String(Math.floor((remaining % 3600) / 60)).padStart(2, "0");
@@ -137,27 +176,30 @@ function DealClock() {
   return (
     <div className="flex items-center gap-2">
       {[hours, minutes, seconds].map((time, index) => (
-        <span key={`${time}-${index}`} className="grid h-9 w-12 place-items-center bg-[#29324e] text-lg font-bold text-white">
-          {time}
-        </span>
+        <div className="flex items-center gap-2" key={`${time}-${index}`}>
+          <span className="grid h-9 w-14 place-items-center bg-[#29324e] text-lg font-bold text-white">
+            {time}
+          </span>
+          {index < 2 ? <span className="text-xl font-black text-[#111]">:</span> : null}
+        </div>
       ))}
     </div>
   );
 }
 
 export default function HomePage() {
+  const setCart = useCartStore((state) => state.setCart);
+  const dealSliderRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const searchKeyword = searchParams.get("keyword") || "";
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
+  const [activeSale, setActiveSale] = useState<FlashSale | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [news, setNews] = useState<News[]>([]);
   const [managedBanners, setManagedBanners] = useState<Banner[]>([]);
   const [keyword, setKeyword] = useState(searchKeyword);
   const [debouncedKeyword, setDebouncedKeyword] = useState(searchKeyword);
-  const [category, setCategory] = useState("");
   const [brand, setBrand] = useState("");
-  const [sort, setSort] = useState("created_desc");
   const [loading, setLoading] = useState(true);
   const [activeBanner, setActiveBanner] = useState(0);
   const mainBanners = managedBanners.filter(
@@ -174,12 +216,11 @@ export default function HomePage() {
   const params = useMemo(
     () => ({
       keyword: debouncedKeyword || undefined,
-      category: category || undefined,
       brand: brand || undefined,
-      sort,
+      sort: "created_desc",
       limit: 32,
     }),
-    [brand, category, debouncedKeyword, sort],
+    [brand, debouncedKeyword],
   );
 
   useEffect(() => {
@@ -211,16 +252,16 @@ export default function HomePage() {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const [categoryRes, brandRes, newsRes, bannerRes] = await Promise.all([
-          catalogApi.categories(),
+        const [brandRes, newsRes, bannerRes, dealRes] = await Promise.all([
           catalogApi.brands(),
           newsApi.list({ status: "published" }),
           catalogApi.banners(),
+          flashSaleApi.active(),
         ]);
-        setCategories(categoryRes.data.data);
         setBrands(brandRes.data.data);
         setNews(newsRes.data.data);
         setManagedBanners(bannerRes.data.data);
+        setActiveSale(dealRes.data.data);
       } catch (error) {
         toast.error(getErrorMessage(error));
       }
@@ -247,16 +288,22 @@ export default function HomePage() {
 
   const addToCart = async (productId: string) => {
     try {
-      await cartApi.add(productId);
+      const { data } = await cartApi.add(productId);
+      setCart(data.data);
       toast.success("Đã thêm vào giỏ hàng");
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
   };
 
-  const activeCategories = categories.filter((item) => item.isActive !== false).slice(0, 12);
-  const dealProducts = products.filter((item) => item.isDeal || item.discount || item.oldPrice).slice(0, 10);
-  const displayDeals = dealProducts.length ? dealProducts : products.slice(0, 10);
+  const dealItems = activeSale?.items.filter((item) => item.sold < item.quantity) || [];
+
+  const scrollDeals = (direction: "left" | "right") => {
+    dealSliderRef.current?.scrollBy({
+      left: direction === "left" ? -520 : 520,
+      behavior: "smooth",
+    });
+  };
 
   return (
     <section className="space-y-8 pb-8">
@@ -301,85 +348,52 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-5">
-            <h2 className="border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase text-[#111]">Deal giờ vàng</h2>
-            <DealClock />
+      <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <h2 className="border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-none text-black">Deal giờ vàng</h2>
+            <span className="hidden h-7 w-px rotate-[18deg] bg-[#d0d5dd] sm:block" />
+            <DealClock endAt={activeSale?.endAt} />
           </div>
-          <Link className="inline-flex items-center gap-2 text-sm font-bold text-[#3278f6] hover:text-[#fb4e4e]" to="/?keyword=deal">
+          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-[#3278f6] hover:text-[#fb4e4e]" to="/?keyword=deal">
             Xem tất cả
             <ArrowRight className="size-4" />
           </Link>
         </div>
         {loading ? (
           <div className="p-10 text-center text-[#8d94ac]">Đang tải sản phẩm...</div>
-        ) : displayDeals.length === 0 ? (
-          <div className="p-10 text-center text-[#8d94ac]">Chưa có sản phẩm phù hợp.</div>
+        ) : dealItems.length === 0 ? (
+          <div className="border border-dashed border-[#d0d5dd] p-10 text-center text-[#8d94ac]">Chưa có Deal giờ vàng đang diễn ra.</div>
         ) : (
-          <div className="grid gap-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-            {displayDeals.map((product) => (
-              <ProductCard key={product._id} product={product} onAdd={addToCart} />
-            ))}
-          </div>
-        )}
-      </section>
-
-      <section className="mx-auto grid max-w-[1600px] gap-4 px-3 lg:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="border border-[#ededed] bg-white">
-          <div className="bg-[#3278f6] px-4 py-3 text-sm font-bold uppercase text-white">Danh mục sản phẩm</div>
-          <div className="divide-y divide-[#ededed]">
-            {categoryMenu.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button key={item.label} className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#eef4ff]" onClick={() => setKeyword(item.keyword)} type="button">
-                  <Icon className="size-5 shrink-0 text-[#3278f6]" />
-                  <span className="min-w-0 flex-1">
-                    <b className="block truncate text-sm text-[#29324e]">{item.label}</b>
-                    <small className="mt-0.5 block truncate text-xs font-semibold text-[#8d94ac]">{item.helper}</small>
-                  </span>
-                  <ChevronRight className="size-4 text-[#3278f6]" />
-                </button>
-              );
-            })}
-          </div>
-        </aside>
-
-        <div className="space-y-4">
-          <div className="border border-[#ededed] bg-white p-4">
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-              <div className="flex min-w-0 flex-1 items-center gap-2 border border-[#ededed] bg-[#f5f5f5] px-3">
-                <Search className="size-5 text-[#3278f6]" />
-                <input className="h-11 min-w-0 flex-1 border-0 bg-transparent text-sm outline-none placeholder:text-[#8d94ac]" placeholder="Tìm nhanh CPU, VGA, RAM, PS5, laptop gaming..." value={keyword} onChange={(event) => setKeyword(event.target.value)} />
-              </div>
-              <select className="h-11 border border-[#ededed] bg-[#f5f5f5] px-3 text-sm" value={category} onChange={(event) => setCategory(event.target.value)}>
-                <option value="">Tất cả danh mục</option>
-                {activeCategories.map((item) => (
-                  <option key={item._id} value={item._id}>{item.name}</option>
-                ))}
-              </select>
-              <select className="h-11 border border-[#ededed] bg-[#f5f5f5] px-3 text-sm" value={sort} onChange={(event) => setSort(event.target.value)}>
-                <option value="created_desc">Mới nhất</option>
-                <option value="price_asc">Giá tăng dần</option>
-                <option value="price_desc">Giá giảm dần</option>
-                <option value="sold_desc">Bán chạy</option>
-                <option value="rating_desc">Đánh giá cao</option>
-              </select>
-            </div>
-          </div>
-
-          <section className="border border-[#ededed] bg-white p-5">
-            <SectionHeader title="Danh mục nổi bật" keyword="PC Gaming" />
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {featuredCategories.map((item) => (
-                <button key={item.title} className="group relative aspect-[1.8/1] overflow-hidden border border-[#ededed] bg-[#f5f5f5] text-left transition hover:border-[#3278f6] hover:shadow-[0_8px_20px_rgba(50,120,246,0.12)]" onClick={() => setKeyword(item.keyword)} type="button">
-                  <img className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" src={item.image} alt={item.title} />
-                  <span className="sr-only">{item.title} - {item.subtitle}</span>
-                </button>
+          <div className="relative border border-[#e5e7eb]">
+            <button
+              aria-label="Xem deal trước"
+              className="absolute left-0 top-1/2 z-20 grid h-10 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-r bg-[#7d879d] text-white shadow transition hover:bg-[#3278f6]"
+              onClick={() => scrollDeals("left")}
+              type="button"
+            >
+              <ChevronLeft className="size-5" />
+            </button>
+            <div
+              className="flex snap-x snap-mandatory overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              ref={dealSliderRef}
+            >
+              {dealItems.map((item) => (
+                <div className="min-w-[230px] snap-start sm:min-w-[250px] lg:min-w-[20%]" key={item._id}>
+                  <DealProductCard item={item} />
+                </div>
               ))}
             </div>
-          </section>
-        </div>
+            <button
+              aria-label="Xem deal tiếp theo"
+              className="absolute right-0 top-1/2 z-20 grid h-10 w-7 translate-x-1/2 -translate-y-1/2 place-items-center rounded-l bg-[#7d879d] text-white shadow transition hover:bg-[#3278f6]"
+              onClick={() => scrollDeals("right")}
+              type="button"
+            >
+              <ChevronRight className="size-5" />
+            </button>
+          </div>
+        )}
       </section>
 
       <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">

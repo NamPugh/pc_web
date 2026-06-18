@@ -4,12 +4,14 @@ import { toast } from "sonner";
 
 import { buildPcApi, getErrorMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { useCartStore } from "@/store/cart";
 import type { Product, ProductType } from "@/types";
 
 const productTypes: ProductType[] = ["cpu", "mainboard", "ram", "ssd", "gpu", "psu", "case", "cooler", "monitor"];
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
 export default function BuildPcPage() {
+  const setCart = useCartStore((state) => state.setCart);
   const [activeType, setActiveType] = useState<ProductType>("cpu");
   const [products, setProducts] = useState<Product[]>([]);
   const [selected, setSelected] = useState<Record<string, Product>>({});
@@ -47,7 +49,10 @@ export default function BuildPcPage() {
         components: Object.fromEntries(Object.entries(selected).map(([type, product]) => [type, { product: product._id, quantity: 1 }])),
       });
       const buildId = (data.data as { _id?: string })._id;
-      if (buildId) await buildPcApi.addToCart(buildId);
+      if (buildId) {
+        const { data: cartData } = await buildPcApi.addToCart(buildId);
+        setCart(cartData.data);
+      }
       toast.success("Đã thêm cấu hình vào giỏ");
     } catch (error) {
       toast.error(getErrorMessage(error));
