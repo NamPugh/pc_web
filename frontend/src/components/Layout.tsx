@@ -186,6 +186,10 @@ export default function Layout() {
                           <UserRound className="size-4" />
                           Thông tin tài khoản
                         </Link>
+                        <Link className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition hover:bg-[#eef4ff] hover:text-[#3278f6]" to="/orders">
+                          <PackageCheck className="size-4" />
+                          Đơn hàng của tôi
+                        </Link>
                         <Link className="flex items-center gap-3 px-3 py-2.5 text-sm font-semibold transition hover:bg-[#eef4ff] hover:text-[#3278f6]" to="/account#shipping-address">
                           <MapPin className="size-4" />
                           Địa chỉ nhận hàng
@@ -306,7 +310,7 @@ export default function Layout() {
       <main className="mx-auto w-full max-w-[1600px] px-3 py-0 text-left">
         <Outlet />
       </main>
-      {location.pathname !== "/cart" && location.pathname !== "/build-pc" && !location.pathname.startsWith("/products/") ? (
+      {location.pathname !== "/cart" && location.pathname !== "/build-pc" && location.pathname !== "/account" && !location.pathname.startsWith("/products/") ? (
       <footer className="mt-8 border-t border-[#222] bg-[#1e1e1e] text-white">
         <div className="border-b border-white/10">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 md:flex-row md:items-center md:justify-between">

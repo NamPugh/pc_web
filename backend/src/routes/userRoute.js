@@ -1,8 +1,9 @@
 import express from 'express';
-import { authMe } from '../controller/userController.js';
+import { authMe, updateProfile } from '../controller/userController.js';
 import { protectedRoute } from '../middlewares/authMiddleware.js';
 const router = express.Router();
 
 router.get("/me", protectedRoute, authMe);
+router.put("/me", protectedRoute, updateProfile);
 
 export default router;

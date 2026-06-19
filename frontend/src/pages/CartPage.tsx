@@ -2,12 +2,9 @@ import {
   ArrowLeft,
   Check,
   Minus,
-  PackageCheck,
   Plus,
-  ShieldCheck,
   ShoppingBag,
   Trash2,
-  Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
@@ -315,21 +312,6 @@ export default function CartPage() {
             </div>
           )}
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            {[
-              { icon: ShieldCheck, title: "Thanh toán an toàn", text: "Thông tin được bảo mật" },
-              { icon: Truck, title: "Giao hàng toàn quốc", text: "Theo dõi trạng thái đơn" },
-              { icon: PackageCheck, title: "Hàng chính hãng", text: "Bảo hành minh bạch" },
-            ].map((benefit) => {
-              const Icon = benefit.icon;
-              return (
-                <div className="flex items-center gap-3 border border-[#e5e7eb] bg-white p-4" key={benefit.title}>
-                  <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#eef4ff] text-[#3278f6]"><Icon className="size-5" /></span>
-                  <div><p className="text-sm font-bold text-[#344054]">{benefit.title}</p><p className="mt-0.5 text-xs text-[#98a2b3]">{benefit.text}</p></div>
-                </div>
-              );
-            })}
-          </div>
         </div>
 
         <form className="border border-[#e5e7eb] bg-white shadow-sm xl:sticky xl:top-44" onSubmit={checkout}>

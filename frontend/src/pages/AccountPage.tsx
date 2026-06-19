@@ -1,7 +1,9 @@
-import { LogIn, Mail, MapPin, MonitorCog, PackageCheck, Phone, ShieldCheck, ShoppingCart, UserRound } from "lucide-react";
-import { useEffect } from "react";
+import { LoaderCircle, LogIn, Mail, MapPin, MonitorCog, PackageCheck, Pencil, Phone, Save, ShieldCheck, ShoppingCart, UserRound, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router";
+import { toast } from "sonner";
 
+import { authApi, getErrorMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 
@@ -12,44 +14,100 @@ const quickActions = [
 ];
 
 export default function AccountPage() {
-  const { user, ready, loadMe } = useAuthStore();
+  const { user, ready, loadMe, setUser } = useAuthStore();
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ userName: "", email: "", phone: "", address: "" });
 
   useEffect(() => {
     if (!ready) void loadMe();
   }, [loadMe, ready]);
 
+  const beginEditing = () => {
+    if (!user) return;
+    setForm({
+      userName: user.userName,
+      email: user.email,
+      phone: user.phone || "",
+      address: user.address || "",
+    });
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    if (user) {
+      setForm({
+        userName: user.userName,
+        email: user.email,
+        phone: user.phone || "",
+        address: user.address || "",
+      });
+    }
+    setEditing(false);
+  };
+
+  const saveProfile = async () => {
+    if (!form.userName.trim() || !form.email.trim()) {
+      toast.warning("Vui lòng nhập tên người dùng và email");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data } = await authApi.updateProfile({
+        userName: form.userName.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        address: form.address.trim(),
+      });
+      setUser(data.user);
+      setForm({
+        userName: data.user.userName,
+        email: data.user.email,
+        phone: data.user.phone || "",
+        address: data.user.address || "",
+      });
+      setEditing(false);
+      toast.success(data.message);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (!ready) {
-    return <div className="rounded-lg border border-[#ededed] bg-white p-8 text-center text-[#8d94ac] shadow-sm">Đang tải tài khoản...</div>;
+    return <div className="grid min-h-80 place-items-center border border-[#e5e7eb] bg-white"><div className="text-center"><LoaderCircle className="mx-auto size-9 animate-spin text-[#3278f6]" /><p className="mt-3 text-sm font-semibold text-[#8d94ac]">Đang tải tài khoản...</p></div></div>;
   }
 
   if (!user) {
     return (
-      <section className="grid gap-6 lg:grid-cols-[1fr_0.8fr]">
-        <div className="rounded-lg border border-[#ededed] bg-white p-6 shadow-sm">
-          <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#D91605]">Tài khoản</p>
-          <h1 className="mt-2 text-4xl font-bold tracking-tight text-[#29324e]">Đăng nhập để quản lý trải nghiệm mua hàng</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#444]">
+      <section className="grid gap-px border border-[#e5e7eb] bg-[#e5e7eb] lg:grid-cols-[1fr_0.8fr]">
+        <div className="bg-white p-6 sm:p-8">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#3278f6]">Tài khoản thành viên</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-[#29324e]">Đăng nhập để quản lý trải nghiệm mua hàng</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-7 text-[#667085]">
             Sau khi đăng nhập, bạn có thể xem đơn hàng, lưu cấu hình PC và thao tác giỏ hàng nhanh hơn.
           </p>
           <div className="mt-6 flex flex-wrap gap-3">
-            <Button className="h-11 rounded-md bg-[#D91605] px-5 hover:bg-[#b51204]" asChild>
+            <Button className="h-11 rounded-none bg-[#3278f6] px-5 font-bold hover:bg-[#2860c5]" asChild>
               <Link to="/signin">
                 <LogIn className="size-4" />
                 Đăng nhập
               </Link>
             </Button>
-            <Button className="h-11 rounded-md" variant="outline" asChild>
+            <Button className="h-11 rounded-none border-[#d0d5dd] font-bold text-[#344054] hover:border-[#3278f6] hover:text-[#3278f6]" variant="outline" asChild>
               <Link to="/signup">Tạo tài khoản</Link>
             </Button>
           </div>
         </div>
-        <div className="rounded-lg bg-[#1e1e1e] p-6 text-white shadow-sm">
-          <ShieldCheck className="size-8 text-white/80" />
-          <h2 className="mt-5 text-2xl font-bold tracking-tight">Quyền lợi thành viên</h2>
-          <div className="mt-5 grid gap-3 text-sm text-white/80">
-            <p className="rounded-md border border-white/15 bg-white/10 p-4">Lưu thông tin nhận hàng cho lần mua tiếp theo.</p>
-            <p className="rounded-md border border-white/15 bg-white/10 p-4">Theo dõi trạng thái đơn và lịch sử mua hàng.</p>
-            <p className="rounded-md border border-white/15 bg-white/10 p-4">Lưu cấu hình PC để thêm vào giỏ khi cần.</p>
+        <div className="bg-[#29324e] p-6 text-white sm:p-8">
+          <span className="grid size-14 place-items-center bg-[#3278f6]"><ShieldCheck className="size-7" /></span>
+          <h2 className="mt-5 text-2xl font-black tracking-tight">Quyền lợi thành viên</h2>
+          <div className="mt-5 grid divide-y divide-white/10 border-y border-white/10 text-sm text-white/75">
+            <p className="py-4">Lưu thông tin nhận hàng cho lần mua tiếp theo.</p>
+            <p className="py-4">Theo dõi trạng thái đơn và lịch sử mua hàng.</p>
+            <p className="py-4">Lưu cấu hình PC để thêm vào giỏ khi cần.</p>
           </div>
         </div>
       </section>
@@ -57,54 +115,85 @@ export default function AccountPage() {
   }
 
   return (
-    <section className="space-y-6">
-      <div className="overflow-hidden rounded-lg border border-[#ededed] bg-white shadow-sm">
-        <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="bg-[#1e1e1e] p-6 text-white sm:p-8">
-            <div className="grid size-20 place-items-center rounded-lg bg-white text-[#D91605] shadow-lg shadow-black/15">
-              <UserRound className="size-10" />
+    <section className="space-y-5 py-5">
+      <header>
+        <p className="text-xs font-black uppercase tracking-[0.18em] text-[#3278f6]">Tài khoản thành viên</p>
+        <h1 className="mt-1 text-3xl font-black tracking-tight text-[#29324e]">Thông tin tài khoản</h1>
+        <p className="mt-2 text-sm text-[#667085]">Quản lý thông tin cá nhân và truy cập nhanh các tiện ích mua hàng.</p>
+      </header>
+
+      <div className="border border-[#e5e7eb] bg-white">
+        <div className="grid lg:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="bg-[#29324e] p-6 text-white sm:p-8">
+            <div className="grid size-20 place-items-center bg-[#3278f6]">
+              <UserRound className="size-9" />
             </div>
-            <p className="mt-6 text-[11px] font-bold uppercase tracking-[0.22em] text-white/70">Xin chào</p>
-            <h1 className="mt-2 text-4xl font-bold tracking-tight">{user.userName}</h1>
-            <p className="mt-3 max-w-md text-sm leading-7 text-white/78">Khu vực quản lý nhanh thông tin cá nhân, đơn hàng và các cấu hình PC đã chọn.</p>
+            <p className="mt-6 text-[11px] font-black uppercase tracking-[0.2em] text-[#9cbcff]">Xin chào</p>
+            <h2 className="mt-2 break-words text-2xl font-black">{user.userName}</h2>
+            <p className="mt-2 break-all text-sm text-white/60">{user.email}</p>
+            <div className="mt-6 border-t border-white/15 pt-5">
+              <span className="inline-flex bg-white/10 px-3 py-1.5 text-xs font-bold text-white/80">
+                {user.role === "admin" ? "Quản trị viên" : "Khách hàng"}
+              </span>
+            </div>
           </div>
-          <div className="grid gap-4 p-6 sm:p-8">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-4">
-                <Mail className="size-5 text-[#D91605]" />
-                <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Email</p>
-                <p className="mt-1 truncate font-semibold text-[#29324e]">{user.email}</p>
+          <div className="p-6 sm:p-8">
+            <div className="mb-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e7eb] pb-4">
+              <div>
+                <h2 className="text-xl font-black text-[#29324e]">Thông tin cá nhân</h2>
+                <p className="mt-1 text-xs text-[#8d94ac]">Cập nhật thông tin dùng cho tài khoản và đơn hàng.</p>
               </div>
-              <div className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-4">
-                <ShieldCheck className="size-5 text-[#D91605]" />
+              {!editing ? (
+                <Button className="rounded-none border-[#3278f6] text-[#3278f6] hover:bg-[#eef4ff]" onClick={beginEditing} variant="outline">
+                  <Pencil className="size-4" /> Chỉnh sửa
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button className="rounded-none" disabled={saving} onClick={cancelEditing} variant="outline"><X className="size-4" /> Hủy</Button>
+                  <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" disabled={saving} onClick={() => void saveProfile()}>
+                    {saving ? <LoaderCircle className="size-4 animate-spin" /> : <Save className="size-4" />} Lưu
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Tên người dùng</span>
+                <div className="relative"><UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-10 pr-3 text-sm font-semibold outline-none disabled:bg-[#f5f5f5] focus:border-[#3278f6]" disabled={!editing} onChange={(event) => setForm((current) => ({ ...current, userName: event.target.value }))} value={editing ? form.userName : user.userName} /></div>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Email</span>
+                <div className="relative"><Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-10 pr-3 text-sm font-semibold outline-none disabled:bg-[#f5f5f5] focus:border-[#3278f6]" disabled={!editing} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} type="email" value={editing ? form.email : user.email} /></div>
+              </label>
+              <label className="block">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Số điện thoại</span>
+                <div className="relative"><Phone className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-10 pr-3 text-sm font-semibold outline-none disabled:bg-[#f5f5f5] focus:border-[#3278f6]" disabled={!editing} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} placeholder="Chưa cập nhật" value={editing ? form.phone : user.phone || ""} /></div>
+              </label>
+              <div className="border border-[#e5e7eb] bg-[#f8fafc] p-4">
+                <ShieldCheck className="size-5 text-[#3278f6]" />
                 <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Vai trò</p>
                 <p className="mt-1 font-semibold text-[#29324e]">{user.role === "admin" ? "Quản trị viên" : "Khách hàng"}</p>
               </div>
-              <div className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-4">
-                <Phone className="size-5 text-[#D91605]" />
-                <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Số điện thoại</p>
-                <p className="mt-1 font-semibold text-[#29324e]">{user.phone || "Chưa cập nhật"}</p>
-              </div>
-              <div className="scroll-mt-48 rounded-md border border-[#ededed] bg-[#f5f5f5] p-4" id="shipping-address">
-                <MapPin className="size-5 text-[#D91605]" />
-                <p className="mt-3 text-xs font-bold uppercase tracking-[0.16em] text-[#8d94ac]">Địa chỉ</p>
-                <p className="mt-1 line-clamp-1 font-semibold text-[#29324e]">{user.address || "Chưa cập nhật"}</p>
-              </div>
+              <label className="scroll-mt-48 sm:col-span-2" id="shipping-address">
+                <span className="mb-1.5 block text-xs font-bold uppercase tracking-[0.12em] text-[#667085]">Địa chỉ nhận hàng</span>
+                <div className="relative"><MapPin className="absolute left-3 top-3.5 size-4 text-[#98a2b3]" /><textarea className="min-h-24 w-full resize-none border border-[#d0d5dd] bg-white py-3 pl-10 pr-3 text-sm font-semibold outline-none disabled:bg-[#f5f5f5] focus:border-[#3278f6]" disabled={!editing} onChange={(event) => setForm((current) => ({ ...current, address: event.target.value }))} placeholder="Chưa cập nhật" value={editing ? form.address : user.address || ""} /></div>
+              </label>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-px border border-[#e5e7eb] bg-[#e5e7eb] md:grid-cols-3">
         {quickActions.map((item) => {
           const Icon = item.icon;
 
           return (
-            <Link key={item.href} to={item.href} className="group rounded-lg border border-[#ededed] bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-[#fb4e4e] hover:shadow-sm">
-              <div className="grid size-12 place-items-center rounded-md bg-[#fff5f5] text-[#D91605] transition group-hover:bg-[#D91605] group-hover:text-white">
+            <Link key={item.href} to={item.href} className="group bg-white p-5 transition hover:shadow-[inset_0_0_0_2px_#3278f6]">
+              <div className="grid size-12 place-items-center bg-[#eef4ff] text-[#3278f6] transition group-hover:bg-[#3278f6] group-hover:text-white">
                 <Icon className="size-5" />
               </div>
-              <h2 className="mt-4 text-xl font-bold tracking-tight text-[#29324e]">{item.label}</h2>
+              <h2 className="mt-4 text-lg font-black text-[#29324e] transition group-hover:text-[#3278f6]">{item.label}</h2>
               <p className="mt-2 text-sm leading-6 text-[#8d94ac]">{item.description}</p>
             </Link>
           );

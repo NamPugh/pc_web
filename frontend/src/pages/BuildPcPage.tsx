@@ -283,14 +283,6 @@ export default function BuildPcPage() {
             <label className="mt-4 block"><span className="mb-1.5 block text-xs font-bold text-[#667085]">Tên cấu hình</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setName(event.target.value)} value={name} /></label>
             <label className="mt-3 block"><span className="mb-1.5 block text-xs font-bold text-[#667085]">Ghi chú</span><textarea className="min-h-20 w-full border border-[#d0d5dd] p-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setNote(event.target.value)} placeholder="Nhu cầu sử dụng..." value={note} /></label>
 
-            <div className="mt-5 border border-[#e5e7eb]">
-              <div className="border-b border-[#e5e7eb] bg-[#f8fafc] px-4 py-3 font-black text-[#344054]">Thông tin PC</div>
-              <div className="space-y-3 p-4 text-sm">
-                <div className="flex justify-between"><span className="text-[#667085]">Linh kiện đã chọn</span><b>{chosenProducts.length}/{componentGroups.length}</b></div>
-                <div className="flex justify-between"><span className="text-[#667085]">Linh kiện bắt buộc</span><b>{requiredSelected}/{requiredGroups.length}</b></div>
-              </div>
-            </div>
-
             <div className="mt-4 border border-[#e5e7eb] p-4">
               <h4 className="font-black text-[#344054]">Chi phí dự tính</h4>
               <div className="mt-4 space-y-3 text-sm">

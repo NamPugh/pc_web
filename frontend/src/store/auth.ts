@@ -8,6 +8,7 @@ type AuthState = {
   user: User | null;
   ready: boolean;
   setSession: (accessToken: string, user?: User | null) => void;
+  setUser: (user: User) => void;
   loadMe: () => Promise<void>;
   signOut: () => Promise<void>;
 };
@@ -20,6 +21,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem("accessToken", accessToken);
     set({ accessToken, user });
   },
+  setUser: (user) => set({ user }),
   loadMe: async () => {
     if (!localStorage.getItem("accessToken")) {
       set({ ready: true, user: null, accessToken: null });

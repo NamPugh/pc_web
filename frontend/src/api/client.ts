@@ -28,6 +28,8 @@ export const authApi = {
   signUp: (payload: { userName: string; email: string; password: string }) => api.post("/auth/signup", payload),
   signOut: () => api.post("/auth/signout"),
   me: () => api.get<{ user: User }>("/users/me"),
+  updateProfile: (payload: Pick<User, "userName" | "email"> & Pick<Required<User>, "phone" | "address">) =>
+    api.put<{ message: string; user: User }>("/users/me", payload),
 };
 
 export const catalogApi = {
