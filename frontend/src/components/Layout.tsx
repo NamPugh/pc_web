@@ -93,6 +93,12 @@ export default function Layout() {
     else resetCart();
   }, [loadCart, ready, resetCart, user]);
 
+  useEffect(() => {
+    const searchKeyword = new URLSearchParams(location.search).get("keyword") || "";
+    const timer = window.setTimeout(() => setKeyword(searchKeyword), 0);
+    return () => window.clearTimeout(timer);
+  }, [location.search]);
+
   const handleSignOut = async () => {
     await signOut();
     resetCart();
@@ -300,7 +306,7 @@ export default function Layout() {
       <main className="mx-auto w-full max-w-[1600px] px-3 py-0 text-left">
         <Outlet />
       </main>
-      {location.pathname !== "/cart" ? (
+      {location.pathname !== "/cart" && location.pathname !== "/build-pc" && !location.pathname.startsWith("/products/") ? (
       <footer className="mt-8 border-t border-[#222] bg-[#1e1e1e] text-white">
         <div className="border-b border-white/10">
           <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-5 md:flex-row md:items-center md:justify-between">

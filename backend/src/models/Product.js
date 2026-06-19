@@ -52,10 +52,6 @@ const productSchema = new mongoose.Schema(
         type: String
       }
     ],
-    shortDescription: {
-      type: String,
-      default: ""
-    },
     description: {
       type: String,
       default: ""

@@ -1,5 +1,17 @@
-import { ArrowRight, CheckCircle2, Minus, Plus, Star, Truck } from "lucide-react";
-import { useEffect, useState } from "react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  ChevronRight,
+  Minus,
+  PackageCheck,
+  Plus,
+  RotateCcw,
+  ShieldCheck,
+  ShoppingCart,
+  Star,
+  Truck,
+} from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useParams } from "react-router";
 import { toast } from "sonner";
@@ -9,7 +21,17 @@ import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/store/cart";
 import type { FlashSaleItem, Product, Review } from "@/types";
 
-const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
+const currency = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
+
+const statusInfo = (product: Product) => {
+  if (product.status === "inactive") return { label: "Ngừng kinh doanh", tone: "bg-[#f2f4f7] text-[#667085]", purchasable: false };
+  if (product.status === "out_of_stock" || product.stock <= 0) return { label: "Hết hàng", tone: "bg-[#fef2f2] text-[#dc2626]", purchasable: false };
+  return { label: "Còn hàng", tone: "bg-[#ecfdf3] text-[#15803d]", purchasable: true };
+};
 
 export default function ProductDetailPage() {
   const setCart = useCartStore((state) => state.setCart);
@@ -20,44 +42,53 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: "" });
   const [loading, setLoading] = useState(true);
+  const [adding, setAdding] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
   const [dealItem, setDealItem] = useState<FlashSaleItem | null>(null);
 
   useEffect(() => {
-    const loadProduct = async () => {
-      setLoading(true);
-      try {
-        const [productRes, reviewRes, saleRes] = await Promise.all([
-          catalogApi.product(id),
-          reviewApi.list(id),
-          flashSaleApi.active(),
-        ]);
-        setProduct(productRes.data.data);
-        setActiveImage(productRes.data.data.images?.[0] || "/icons.svg");
-        setReviews(reviewRes.data.data);
-        setDealItem(saleRes.data.data?.items.find((item) => item.product._id === id && item.sold < item.quantity) || null);
-      } catch (error) {
-        toast.error(getErrorMessage(error));
-      } finally {
-        setLoading(false);
-      }
+    let active = true;
+    void Promise.all([
+      catalogApi.product(id),
+      reviewApi.list(id),
+      flashSaleApi.active(),
+    ]).then(([productRes, reviewRes, saleRes]) => {
+      if (!active) return;
+      const nextProduct = productRes.data.data;
+      setProduct(nextProduct);
+      setActiveImage(nextProduct.images?.[0] || "/icons.svg");
+      setReviews(reviewRes.data.data);
+      setDealItem(saleRes.data.data?.items.find((item) => item.product._id === id && item.sold < item.quantity) || null);
+      setLoading(false);
+    }).catch((error: unknown) => {
+      if (!active) return;
+      toast.error(getErrorMessage(error));
+      setLoading(false);
+    });
+    return () => {
+      active = false;
     };
-
-    if (id) void loadProduct();
   }, [id]);
+
+  const specs = useMemo(() => Object.entries(product?.specs || {}), [product?.specs]);
 
   const addToCart = async () => {
     if (!product) return;
+    setAdding(true);
     try {
       const { data } = await cartApi.add(product._id, quantity);
       setCart(data.data);
-      toast.success("Đã thêm sản phẩm vào giỏ");
+      toast.success(`Đã thêm ${quantity} sản phẩm vào giỏ`);
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setAdding(false);
     }
   };
 
   const submitReview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setSubmittingReview(true);
     try {
       await reviewApi.create(id, reviewForm);
       const { data } = await reviewApi.list(id);
@@ -66,39 +97,59 @@ export default function ProductDetailPage() {
       toast.success("Đã gửi đánh giá");
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setSubmittingReview(false);
     }
   };
 
   if (loading) {
-    return <div className="rounded-lg border border-[#ededed] bg-white p-8 text-center text-[#8d94ac] shadow-sm">Đang tải chi tiết...</div>;
+    return (
+      <div className="my-8 border border-[#e5e7eb] bg-white p-14 text-center text-sm font-semibold text-[#8d94ac]">
+        Đang tải thông tin sản phẩm...
+      </div>
+    );
   }
 
   if (!product) {
-    return <div className="rounded-lg border border-[#ededed] bg-white p-8 text-center text-[#8d94ac] shadow-sm">Không tìm thấy sản phẩm.</div>;
+    return (
+      <div className="my-8 border border-[#e5e7eb] bg-white p-14 text-center">
+        <PackageCheck className="mx-auto size-10 text-[#98a2b3]" />
+        <h1 className="mt-3 text-xl font-black text-[#344054]">Không tìm thấy sản phẩm</h1>
+        <Link className="mt-4 inline-flex items-center gap-2 font-bold text-[#3278f6]" to="/">Quay lại trang chủ <ArrowRight className="size-4" /></Link>
+      </div>
+    );
   }
 
-  const specs = product.specs ? Object.entries(product.specs).slice(0, 8) : [];
+  const images = product.images?.length ? product.images : ["/icons.svg"];
   const displayPrice = dealItem ? dealItem.dealPrice : product.price;
+  const originalPrice = dealItem ? product.price : product.oldPrice;
+  const discount = originalPrice && originalPrice > displayPrice
+    ? Math.round((1 - displayPrice / originalPrice) * 100)
+    : product.discount || 0;
+  const status = statusInfo(product);
+  const maxQuantity = Math.max(Math.min(product.stock, dealItem ? dealItem.quantity - dealItem.sold : product.stock), 1);
 
   return (
-    <section className="space-y-4">
-      <div className="rounded-lg border border-[#ededed] bg-white px-4 py-3 text-sm font-semibold text-[#8d94ac] shadow-sm">
-        <Link className="text-[#D91605] hover:underline" to="/">Trang chủ</Link>
-        <span className="mx-2">/</span>
-        <span>{product.category?.name || "Sản phẩm"}</span>
-        <span className="mx-2">/</span>
-        <span className="text-[#29324e]">{product.name}</span>
-      </div>
+    <section className="space-y-5 pb-10 pt-4">
+      <nav className="flex min-w-0 items-center gap-2 overflow-hidden border border-[#e5e7eb] bg-white px-4 py-3 text-xs font-semibold text-[#8d94ac]">
+        <Link className="shrink-0 text-[#3278f6] hover:underline" to="/">Trang chủ</Link>
+        <ChevronRight className="size-3.5 shrink-0" />
+        <Link className="shrink-0 hover:text-[#3278f6]" to={`/?keyword=${encodeURIComponent(product.category?.name || "")}`}>{product.category?.name || "Sản phẩm"}</Link>
+        <ChevronRight className="size-3.5 shrink-0" />
+        <span className="truncate text-[#344054]">{product.name}</span>
+      </nav>
 
-      <div className="grid gap-4 lg:grid-cols-[430px_minmax(0,1fr)_300px]">
-        <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
-          <div className="aspect-square rounded-md bg-[#f5f5f5] p-4">
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(430px,0.9fr)_minmax(0,1.1fr)]">
+        <section className="border border-[#e5e7eb] bg-white p-4">
+          <div className="relative aspect-square overflow-hidden bg-white">
+            {discount > 0 ? <span className="absolute left-0 top-0 z-10 bg-[#fb4e4e] px-3 py-1.5 text-sm font-black text-white">-{discount}%</span> : null}
+            {dealItem ? <span className="absolute right-0 top-0 z-10 bg-[#f97316] px-3 py-1.5 text-xs font-black uppercase text-white">Deal giờ vàng</span> : null}
             <img className="h-full w-full object-contain" src={activeImage} alt={product.name} />
           </div>
-          <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-            {(product.images?.length ? product.images : ["/icons.svg"]).map((image, index) => (
+          <div className="mt-3 grid grid-flow-col auto-cols-[88px] gap-2 overflow-x-auto pb-1">
+            {images.map((image, index) => (
               <button
-                className={`aspect-square w-[calc(25%-6px)] min-w-[82px] rounded-md border bg-[#f5f5f5] p-2 transition ${activeImage === image ? "border-[#3278f6] ring-2 ring-[#3278f6]/15" : "border-[#ededed] hover:border-[#9cbcff]"}`}
+                className={`aspect-square overflow-hidden border bg-white p-1 transition ${activeImage === image ? "border-2 border-[#3278f6]" : "border-[#d0d5dd] hover:border-[#3278f6]"}`}
                 key={`${image}-${index}`}
                 onClick={() => setActiveImage(image)}
                 type="button"
@@ -107,118 +158,113 @@ export default function ProductDetailPage() {
               </button>
             ))}
           </div>
-        </div>
-
-        <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#D91605]">
-            {product.category?.name || "Danh mục"} · {product.brand?.name || "Thương hiệu"}
-          </p>
-          <h1 className="mt-2 text-2xl font-bold leading-tight tracking-tight text-[#29324e] sm:text-3xl">{product.name}</h1>
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-sm text-[#8d94ac]">
-            <span className="inline-flex items-center gap-1 text-amber-500">
-              <Star className="size-4 fill-current" />
-              {product.ratingAverage || 0}
-            </span>
-            <span>({product.ratingCount || 0} đánh giá)</span>
-            <span>·</span>
-            <span>Đã bán {product.sold || 0}</span>
-            <span>·</span>
-            <span>Kho {product.stock}</span>
-          </div>
-
-          <div className="mt-5 rounded-md bg-[#fff5f5] p-4">
-            <p className="text-3xl font-bold text-[#D91605]">{currency.format(displayPrice)}</p>
-            {dealItem ? (
-              <>
-                <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.price)}</p>
-                <p className="mt-2 text-xs font-bold uppercase text-[#ea580c]">Deal giờ vàng · còn {dealItem.quantity - dealItem.sold} suất</p>
-              </>
-            ) : product.oldPrice ? <p className="mt-1 text-sm text-[#8d94ac] line-through">{currency.format(product.oldPrice)}</p> : null}
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="mt-4 grid grid-cols-3 border border-[#e5e7eb] bg-[#f8fafc]">
             {[
-              "Hàng chính hãng",
-              "Bảo hành minh bạch",
-              "Hỗ trợ build PC",
-            ].map((item) => (
-              <div key={item} className="rounded-md border border-[#ededed] bg-[#f5f5f5] p-3 text-sm font-semibold text-[#29324e]">
-                <CheckCircle2 className="mb-2 size-4 text-[#D91605]" />
-                {item}
-              </div>
-            ))}
+              { icon: ShieldCheck, label: "Chính hãng" },
+              { icon: RotateCcw, label: "Đổi trả rõ ràng" },
+              { icon: Truck, label: "Giao toàn quốc" },
+            ].map((item) => {
+              const Icon = item.icon;
+              return <div className="flex flex-col items-center gap-2 border-r border-[#e5e7eb] p-3 text-center text-xs font-bold text-[#475467] last:border-r-0" key={item.label}><Icon className="size-5 text-[#3278f6]" />{item.label}</div>;
+            })}
           </div>
-
-          {specs.length > 0 ? (
-            <div className="mt-5">
-              <h2 className="text-lg font-bold tracking-tight text-[#29324e]">Thông số chính</h2>
-              <div className="mt-3 overflow-hidden rounded-md border border-[#ededed]">
-                {specs.map(([key, value]) => (
-                  <div key={key} className="grid grid-cols-[140px_minmax(0,1fr)] border-b border-[#ededed] last:border-b-0">
-                    <span className="bg-[#f5f5f5] px-3 py-2 text-sm font-bold text-[#444]">{key}</span>
-                    <span className="px-3 py-2 text-sm text-[#29324e]">{String(value)}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        <aside className="space-y-4 lg:sticky lg:top-44 lg:self-start">
-          <div className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
-            <h2 className="text-lg font-bold tracking-tight text-[#29324e]">Đặt mua nhanh</h2>
-            <div className="mt-4 flex items-center gap-2">
-              <Button size="icon-sm" variant="outline" onClick={() => setQuantity((current) => Math.max(1, current - 1))}>
-                <Minus className="size-4" />
-              </Button>
-              <input className="h-9 w-16 rounded-md border border-[#ededed] text-center text-sm font-bold" min={1} type="number" value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))} />
-              <Button size="icon-sm" variant="outline" onClick={() => setQuantity((current) => current + 1)}>
-                <Plus className="size-4" />
-              </Button>
-            </div>
-            <Button className="mt-4 h-11 w-full rounded-md bg-[#D91605] hover:bg-[#b51204]" onClick={() => void addToCart()}>
-              Thêm vào giỏ
-              <ArrowRight className="size-4" />
-            </Button>
-            <Button className="mt-2 h-11 w-full rounded-md" variant="outline" asChild>
-              <Link to="/cart">Đi tới giỏ hàng</Link>
-            </Button>
-          </div>
-
-          <div className="rounded-lg border border-[#ededed] bg-white p-4 text-sm text-[#444] shadow-sm">
-            <h2 className="mb-3 text-lg font-bold tracking-tight text-[#29324e]">Chính sách bán hàng</h2>
-            <p className="mb-2 inline-flex items-center gap-2"><Truck className="size-4 text-[#D91605]" /> Giao hàng toàn quốc</p>
-            <p className="mb-2 inline-flex items-center gap-2"><CheckCircle2 className="size-4 text-[#D91605]" /> Kiểm tra hàng trước khi nhận</p>
-            <p className="inline-flex items-center gap-2"><Star className="size-4 text-[#D91605]" /> Tư vấn cấu hình miễn phí</p>
-          </div>
-        </aside>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
-          <h2 className="border-b border-[#ededed] pb-3 text-xl font-bold tracking-tight text-[#29324e]">Mô tả sản phẩm</h2>
-          <p className="mt-4 whitespace-pre-line text-sm leading-8 text-[#29324e]">{product.description || product.shortDescription || "Chưa có mô tả."}</p>
         </section>
 
-        <section className="rounded-lg border border-[#ededed] bg-white p-4 shadow-sm">
-          <h2 className="border-b border-[#ededed] pb-3 text-xl font-bold tracking-tight text-[#29324e]">Đánh giá</h2>
-          <form onSubmit={submitReview} className="mt-4 grid gap-3">
-            <select className="h-10 rounded-md border border-[#ededed] px-3 text-sm" value={reviewForm.rating} onChange={(event) => setReviewForm({ ...reviewForm, rating: Number(event.target.value) })}>
-              {[5, 4, 3, 2, 1].map((rating) => (
-                <option key={rating} value={rating}>{rating} sao</option>
-              ))}
-            </select>
-            <textarea className="min-h-20 rounded-md border border-[#ededed] p-3 text-sm" placeholder="Viết nhận xét..." value={reviewForm.comment} onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} />
-            <Button className="h-10 rounded-md bg-[#D91605] hover:bg-[#b51204]">Gửi đánh giá</Button>
-          </form>
-          <div className="mt-4 space-y-2">
-            {reviews.map((review) => (
-              <div key={review._id} className="rounded-md bg-[#f5f5f5] p-3">
-                <p className="text-sm font-bold text-[#29324e]">{review.rating} sao</p>
-                <p className="text-sm text-[#444]">{review.comment || "Không có bình luận."}</p>
+        <section className="border border-[#e5e7eb] bg-white">
+          <div className="border-b border-[#e5e7eb] p-5 sm:p-6">
+            <div className="flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-[0.12em]">
+              <span className="text-[#3278f6]">{product.category?.name || "Sản phẩm"}</span>
+              {product.brand?.name ? <><span className="text-[#d0d5dd]">/</span><span className="text-[#667085]">{product.brand.name}</span></> : null}
+              {product.sku ? <><span className="text-[#d0d5dd]">/</span><span className="text-[#98a2b3]">SKU: {product.sku}</span></> : null}
+            </div>
+            <h1 className="mt-3 text-2xl font-black leading-tight tracking-tight text-[#1d2939] sm:text-3xl">{product.name}</h1>
+            <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 border-y border-[#eef0f3] py-3 text-sm">
+              <span className="flex items-center gap-1 text-[#f7b500]">
+                {Array.from({ length: 5 }, (_, index) => <Star className={`size-4 ${index < Math.round(product.ratingAverage || 0) ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />)}
+              </span>
+              <span className="text-[#667085]">{product.ratingAverage?.toFixed(1) || "0.0"} · {product.ratingCount || 0} đánh giá</span>
+              <span className="text-[#667085]">Đã bán: <b className="text-[#344054]">{product.sold || 0}</b></span>
+              <span className={`px-2.5 py-1 text-xs font-bold ${status.tone}`}>{status.label}</span>
+            </div>
+
+            <div className="mt-5 bg-[#f8faff] p-4">
+              <p className="text-sm font-semibold text-[#667085]">Giá bán</p>
+              <div className="mt-1 flex flex-wrap items-end gap-3">
+                <strong className="text-3xl font-black text-[#fb4e4e] sm:text-4xl">{currency.format(displayPrice)}</strong>
+                {discount > 0 ? <span className="mb-1 border border-[#fb4e4e] px-2 py-1 text-xs font-bold text-[#fb4e4e]">Tiết kiệm {discount}%</span> : null}
               </div>
+              {originalPrice && originalPrice > displayPrice ? <p className="mt-2 text-sm text-[#98a2b3]">Giá niêm yết: <span className="line-through">{currency.format(originalPrice)}</span></p> : null}
+              {dealItem ? <p className="mt-2 text-xs font-black uppercase text-[#ea580c]">Còn {dealItem.quantity - dealItem.sold} suất ưu đãi</p> : null}
+            </div>
+          </div>
+
+          <div className="grid gap-5 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+            <div>
+              <h2 className="text-base font-black uppercase text-[#344054]">Thông số nổi bật</h2>
+              {specs.length ? (
+                <div className="mt-3 border border-[#e5e7eb]">
+                  {specs.slice(0, 6).map(([key, value], index) => (
+                    <div className={`grid grid-cols-[135px_minmax(0,1fr)] text-sm ${index % 2 === 0 ? "bg-[#f8fafc]" : "bg-white"}`} key={key}>
+                      <span className="border-r border-[#e5e7eb] px-3 py-2.5 font-bold text-[#667085]">{key}</span>
+                      <span className="px-3 py-2.5 text-[#344054]">{String(value)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="mt-3 border border-dashed border-[#d0d5dd] p-5 text-sm text-[#8d94ac]">Thông số đang được cập nhật.</p>}
+            </div>
+
+            <aside className="border border-[#cbdcff] bg-[#f8faff] p-4">
+              <h2 className="font-black text-[#1d2939]">Mua sản phẩm</h2>
+              <p className="mt-1 text-xs text-[#667085]">{status.purchasable ? `Còn ${product.stock} sản phẩm trong kho` : status.label}</p>
+              <div className="mt-4 flex h-11 items-center border border-[#d0d5dd] bg-white">
+                <button className="grid h-full w-11 place-items-center text-[#667085] hover:bg-[#eef4ff] hover:text-[#3278f6]" disabled={!status.purchasable || quantity <= 1} onClick={() => setQuantity((current) => Math.max(1, current - 1))} type="button"><Minus className="size-4" /></button>
+                <input className="h-full min-w-0 flex-1 border-x border-[#d0d5dd] text-center font-black outline-none" disabled={!status.purchasable} max={maxQuantity} min={1} onChange={(event) => setQuantity(Math.min(maxQuantity, Math.max(1, Number(event.target.value) || 1)))} type="number" value={quantity} />
+                <button className="grid h-full w-11 place-items-center text-[#667085] hover:bg-[#eef4ff] hover:text-[#3278f6]" disabled={!status.purchasable || quantity >= maxQuantity} onClick={() => setQuantity((current) => Math.min(maxQuantity, current + 1))} type="button"><Plus className="size-4" /></button>
+              </div>
+              <Button className="mt-3 h-12 w-full rounded-none bg-[#3278f6] font-black hover:bg-[#2860c5]" disabled={!status.purchasable || adding} onClick={() => void addToCart()}>
+                {adding ? "Đang thêm..." : <><ShoppingCart className="size-5" />Thêm vào giỏ hàng</>}
+              </Button>
+              <Link className="mt-2 flex h-11 items-center justify-center border border-[#3278f6] text-sm font-bold text-[#3278f6] transition hover:bg-[#eef4ff]" to="/cart">Xem giỏ hàng <ArrowRight className="ml-2 size-4" /></Link>
+              <div className="mt-4 space-y-2 border-t border-[#dbe5f8] pt-4 text-xs font-semibold text-[#667085]">
+                <p className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[#16a34a]" /> Kiểm tra hàng trước khi nhận</p>
+                <p className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[#16a34a]" /> Tư vấn cấu hình miễn phí</p>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </div>
+
+      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_390px]">
+        <div className="space-y-5">
+          <section className="border border-[#e5e7eb] bg-white">
+            <header className="border-b border-[#e5e7eb] px-5 py-4"><h2 className="border-l-4 border-[#3278f6] pl-3 text-xl font-black uppercase text-[#1d2939]">Mô tả sản phẩm</h2></header>
+            <div className="whitespace-pre-line p-5 text-sm leading-8 text-[#344054] sm:p-6">{product.description || "Nội dung mô tả đang được cập nhật."}</div>
+          </section>
+
+          <section className="border border-[#e5e7eb] bg-white">
+            <header className="border-b border-[#e5e7eb] px-5 py-4"><h2 className="border-l-4 border-[#3278f6] pl-3 text-xl font-black uppercase text-[#1d2939]">Thông số kỹ thuật</h2></header>
+            {specs.length ? <div className="p-5 sm:p-6"><div className="overflow-hidden border border-[#e5e7eb]">{specs.map(([key, value], index) => <div className={`grid sm:grid-cols-[220px_minmax(0,1fr)] ${index % 2 === 0 ? "bg-[#f8fafc]" : "bg-white"}`} key={key}><span className="border-b border-[#e5e7eb] px-4 py-3 text-sm font-bold text-[#667085] sm:border-b-0 sm:border-r">{key}</span><span className="border-b border-[#e5e7eb] px-4 py-3 text-sm text-[#344054] last:border-b-0">{String(value)}</span></div>)}</div></div> : <p className="p-6 text-sm text-[#8d94ac]">Thông số đang được cập nhật.</p>}
+          </section>
+        </div>
+
+        <section className="border border-[#e5e7eb] bg-white xl:sticky xl:top-40">
+          <header className="border-b border-[#e5e7eb] px-5 py-4">
+            <h2 className="text-xl font-black uppercase text-[#1d2939]">Đánh giá sản phẩm</h2>
+            <div className="mt-3 flex items-end gap-3"><strong className="text-4xl font-black text-[#3278f6]">{product.ratingAverage?.toFixed(1) || "0.0"}</strong><div><div className="flex text-[#f7b500]">{Array.from({ length: 5 }, (_, index) => <Star className={`size-4 ${index < Math.round(product.ratingAverage || 0) ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />)}</div><p className="mt-1 text-xs text-[#8d94ac]">{reviews.length} nhận xét</p></div></div>
+          </header>
+          <form className="grid gap-3 border-b border-[#e5e7eb] p-5" onSubmit={submitReview}>
+            <label><span className="mb-1 block text-xs font-bold text-[#667085]">Mức đánh giá</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setReviewForm({ ...reviewForm, rating: Number(event.target.value) })} value={reviewForm.rating}>{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}</select></label>
+            <textarea className="min-h-24 border border-[#d0d5dd] p-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} placeholder="Chia sẻ trải nghiệm của bạn..." value={reviewForm.comment} />
+            <Button className="h-11 rounded-none bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={submittingReview}>{submittingReview ? "Đang gửi..." : "Gửi đánh giá"}</Button>
+          </form>
+          <div className="max-h-[520px] divide-y divide-[#eef0f3] overflow-y-auto">
+            {reviews.map((review) => (
+              <article className="p-5" key={review._id}>
+                <div className="flex items-center justify-between gap-3"><p className="font-bold text-[#344054]">{review.user?.userName || "Khách hàng"}</p><span className="flex text-[#f7b500]">{Array.from({ length: 5 }, (_, index) => <Star className={`size-3 ${index < review.rating ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />)}</span></div>
+                <p className="mt-2 text-sm leading-6 text-[#667085]">{review.comment || "Không có nội dung nhận xét."}</p>
+              </article>
             ))}
-            {reviews.length === 0 ? <p className="text-sm text-[#8d94ac]">Chưa có đánh giá.</p> : null}
+            {!reviews.length ? <p className="p-6 text-center text-sm text-[#8d94ac]">Chưa có đánh giá nào.</p> : null}
           </div>
         </section>
       </div>

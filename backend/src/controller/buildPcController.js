@@ -1,6 +1,25 @@
 import Product from "../models/Product.js";
 import PCBuild from "../models/PCBuild.js";
 import Cart from "../models/Cart.js";
+import Category from "../models/Category.js";
+
+const componentCategoryAliases = {
+  cpu: ["cpu", "bo vi xu ly", "bộ vi xử lý"],
+  mainboard: ["mainboard", "motherboard", "bo mach chu", "bo mạch chủ"],
+  ram: ["ram", "bo nho trong", "bộ nhớ trong"],
+  ssd: ["ssd", "o cung ssd", "ổ cứng ssd"],
+  hdd: ["hdd", "o cung hdd", "ổ cứng hdd"],
+  gpu: ["gpu", "vga", "card man hinh", "card màn hình"],
+  psu: ["psu", "nguon may tinh", "nguồn máy tính", "bo nguon", "bộ nguồn"],
+  case: ["case", "vo case", "vỏ case", "thung may", "thùng máy"],
+  cooler: ["cooler", "tan nhiet", "tản nhiệt"],
+  monitor: ["monitor", "man hinh", "màn hình"],
+  keyboard: ["keyboard", "ban phim", "bàn phím"],
+  mouse: ["mouse", "chuot", "chuột"],
+  headphone: ["headphone", "headset", "tai nghe", "tai nghe"]
+};
+
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const calculateBuildTotal = async (components) => {
   let total = 0;
@@ -23,10 +42,22 @@ const calculateBuildTotal = async (components) => {
 export const getComponentsByType = async (req, res) => {
   try {
     const { productType } = req.params;
+    const aliases = componentCategoryAliases[productType] || [productType];
+    const aliasPattern = aliases.map(escapeRegex).join("|");
+    const matchingCategories = await Category.find({
+      $or: [
+        { name: { $regex: aliasPattern, $options: "i" } },
+        { slug: { $regex: aliasPattern.replaceAll(" ", "[-_ ]?"), $options: "i" } }
+      ]
+    }).select("_id");
 
     const products = await Product.find({
-      productType,
-      status: "active"
+      status: "active",
+      stock: { $gt: 0 },
+      $or: [
+        { productType },
+        { productType: "other", category: { $in: matchingCategories.map((category) => category._id) } }
+      ]
     })
       .populate("category", "name slug")
       .populate("brand", "name slug logo")

@@ -104,8 +104,12 @@ export const adminApi = {
   ) => api.put<ApiItem<Order>>(`/orders/${id}/status`, payload),
   createProduct: (payload: Omit<Partial<Product>, "category" | "brand"> & { name: string; price: number; category: string; brand?: string }) =>
     api.post<ApiItem<Product>>("/products", payload),
-  updateProduct: (id: string, payload: Partial<Product>) => api.put<ApiItem<Product>>(`/products/${id}`, payload),
+  updateProduct: (
+    id: string,
+    payload: Omit<Partial<Product>, "category" | "brand"> & { category?: string; brand?: string },
+  ) => api.put<ApiItem<Product>>(`/products/${id}`, payload),
   deleteProduct: (id: string) => api.delete(`/products/${id}`),
+  deleteAllProducts: () => api.delete<{ success: boolean; message: string; deletedCount: number }>("/products/all"),
   createCategory: (payload: { name: string; image?: string }) => api.post<ApiItem<Category>>("/categories", payload),
   createBrand: (payload: { name: string; logo?: string }) => api.post<ApiItem<Brand>>("/brands", payload),
   createBanner: (payload: Omit<Banner, "_id" | "createdAt" | "updatedAt">) =>

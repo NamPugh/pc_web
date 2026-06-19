@@ -1,5 +1,8 @@
 import Product from '../models/Product.js';
 import slugify from 'slugify';
+import Cart from '../models/Cart.js';
+import FlashSale from '../models/FlashSale.js';
+import HomeSection from '../models/HomeSection.js';
 
 const normalizeImages = (images) => {
     if(!images) return [];
@@ -18,6 +21,9 @@ export const createProduct = async (req, res) => {
                 locale: "vi"
             });
         }
+        const price = Number(data.price);
+        const oldPrice = Number(data.oldPrice);
+        data.discount = oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
 
         const product = await Product.create(data);
 
@@ -50,8 +56,18 @@ export const buildProductFilter = (query) => {
     } = query;
 
     const filter = {};
-    // tìm kiếm bằng keyword 
-    if(keyword) filter.name = {$regex: keyword, $options: "i"};
+    // tìm kiếm theo các thông tin chính của sản phẩm
+    if(keyword) {
+        const safeKeyword = String(keyword).trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if(safeKeyword) {
+            const searchPattern = {$regex: safeKeyword, $options: "i"};
+            filter.$or = [
+                {name: searchPattern},
+                {sku: searchPattern},
+                {description: searchPattern}
+            ];
+        }
+    }
     // các trường có thông tin rõ ràng
     if(category) filter.category = category;
     if(brand) filter.brand = brand;
@@ -178,18 +194,20 @@ export const getProductBySlug = async (req, res) => {
 export const updateProduct = async (req, res) => {
     try {
         const data = {...req.body};
+        const currentProduct = await Product.findById(req.params.id);
+        if(!currentProduct) {
+            return res.status(404).json({success: false, message: "Không tìm thấy sản phẩm"});
+        }
         if(data.images !== undefined) data.images = normalizeImages(data.images);
+        const nextPrice = data.price !== undefined ? Number(data.price) : currentProduct.price;
+        const nextOldPrice = data.oldPrice !== undefined ? Number(data.oldPrice) : currentProduct.oldPrice;
+        data.discount = nextOldPrice > nextPrice ? Math.round((1 - nextPrice / nextOldPrice) * 100) : 0;
         if(data.isDeal) {
             const dealPrice = Number(data.dealPrice);
             const dealQuantity = Number(data.dealQuantity);
             const dealStartAt = new Date(data.dealStartAt);
             const dealEndAt = new Date(data.dealEndAt);
-            const currentProduct = await Product.findById(req.params.id);
-
-            if(!currentProduct) {
-                return res.status(404).json({success: false, message: "Không tìm thấy sản phẩm"});
-            }
-            if(!dealPrice || dealPrice >= currentProduct.price) {
+            if(!dealPrice || dealPrice >= nextPrice) {
                 return res.status(400).json({success: false, message: "Giá deal phải lớn hơn 0 và thấp hơn giá bán"});
             }
             if(!dealQuantity || dealQuantity < 1) {
@@ -251,6 +269,20 @@ export const deleteProduct = async (req, res) => {
                 message: "Không tìm thấy sản phẩm"
             });
         }
+        await Promise.all([
+            Cart.updateMany(
+                {"items.product": product._id},
+                {$pull: {items: {product: product._id}}}
+            ),
+            FlashSale.updateMany(
+                {"items.product": product._id},
+                {$pull: {items: {product: product._id}}}
+            ),
+            HomeSection.updateMany(
+                {products: product._id},
+                {$pull: {products: product._id}}
+            )
+        ]);
         res.json({
             success: true, 
             message: "Xóa sản phẩm thành công"
@@ -259,6 +291,29 @@ export const deleteProduct = async (req, res) => {
         res.status(500).json({
             success: false,
             message: "Lỗi xóa sản phẩm",
+            error: error.message
+        });
+    }
+};
+
+export const deleteAllProducts = async (_req, res) => {
+    try {
+        const result = await Product.deleteMany({});
+        await Promise.all([
+            Cart.updateMany({}, {$set: {items: [], totalPrice: 0}}),
+            FlashSale.updateMany({}, {$set: {items: []}}),
+            HomeSection.updateMany({}, {$set: {products: []}})
+        ]);
+
+        res.json({
+            success: true,
+            message: `Đã xóa ${result.deletedCount} sản phẩm`,
+            deletedCount: result.deletedCount
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Lỗi xóa toàn bộ sản phẩm",
             error: error.message
         });
     }

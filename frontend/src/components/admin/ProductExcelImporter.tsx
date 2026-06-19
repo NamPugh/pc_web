@@ -34,7 +34,6 @@ type ImportRow = {
   brandId?: string;
   brandName?: string;
   productType: ProductType;
-  shortDescription?: string;
   description?: string;
   images?: string[];
   specs?: Record<string, string>;
@@ -53,8 +52,7 @@ const headerAliases: Record<string, string[]> = {
   category: ["danh muc", "danh mục", "category"],
   brand: ["thuong hieu", "thương hiệu", "brand"],
   productType: ["loai san pham", "loại sản phẩm", "product type", "producttype"],
-  shortDescription: ["mo ta ngan", "mô tả ngắn", "short description", "shortdescription"],
-  description: ["mo ta", "mô tả", "description"],
+  description: ["mo ta", "mô tả", "mo ta san pham", "mô tả sản phẩm", "product description", "description"],
   images: ["hinh anh", "hình ảnh", "anh", "ảnh", "link anh", "link ảnh", "images", "image"],
   additionalImages: ["anh khac", "ảnh khác", "anh khac cach nhau", "ảnh khác cách nhau", "additional images"],
   specs: ["thong so ky thuat", "thông số kỹ thuật", "specs", "specifications"],
@@ -71,8 +69,12 @@ const normalize = (value: unknown) =>
     .replace(/\s+/g, " ")
     .trim();
 
-const findColumn = (headers: string[], key: keyof typeof headerAliases) =>
-  headers.findIndex((header) => headerAliases[key].some((alias) => normalize(alias) === header));
+const findColumn = (headers: string[], key: keyof typeof headerAliases) => {
+  const aliases = headerAliases[key].map(normalize);
+  const exactMatch = headers.findIndex((header) => aliases.includes(header));
+  if (exactMatch >= 0) return exactMatch;
+  return headers.findIndex((header) => aliases.some((alias) => header.startsWith(`${alias} `)));
+};
 
 const cellText = (row: unknown[], index: number) => index >= 0 ? String(row[index] ?? "").trim() : "";
 
@@ -101,6 +103,17 @@ const inferProductType = (categoryName: string): ProductType => {
   if (category.includes("laptop")) return "laptop";
   if (category.includes("man hinh") || category.includes("monitor")) return "monitor";
   if (category.includes("vga") || category.includes("card man hinh")) return "gpu";
+  if (category.includes("mainboard") || category.includes("bo mach chu") || category === "main") return "mainboard";
+  if (category.includes("cpu") || category.includes("bo vi xu ly")) return "cpu";
+  if (category.includes("ram") || category.includes("bo nho trong")) return "ram";
+  if (category.includes("ssd")) return "ssd";
+  if (category.includes("hdd") || category.includes("o cung")) return "hdd";
+  if (category.includes("nguon") || category.includes("psu")) return "psu";
+  if (category.includes("case") || category.includes("vo may")) return "case";
+  if (category.includes("tan nhiet") || category.includes("cooler")) return "cooler";
+  if (category.includes("ban phim") || category.includes("keyboard")) return "keyboard";
+  if (category.includes("chuot") || category.includes("mouse")) return "mouse";
+  if (category.includes("tai nghe") || category.includes("headphone") || category.includes("headset")) return "headphone";
   if (category.includes("pc")) return "pc";
   return "other";
 };
@@ -191,8 +204,8 @@ export default function ProductExcelImporter({ categories, brands, products, onI
     const { default: writeXlsxFile } = await import("write-excel-file/browser");
     await writeXlsxFile(
       [
-        ["Tên sản phẩm", "Giá bán", "Giá cũ", "Tồn kho", "Danh mục", "Thương hiệu", "Loại sản phẩm", "Mô tả ngắn", "Mô tả", "Hình ảnh", "Trạng thái"],
-        ["Card màn hình mẫu", 12990000, 14990000, 10, categoryExample, brandExample, "gpu", "Mô tả ngắn sản phẩm", "Mô tả chi tiết", "https://example.com/image.jpg", "active"],
+        ["Tên sản phẩm", "Giá bán", "Giá cũ", "Tồn kho", "Danh mục", "Thương hiệu", "Loại sản phẩm", "Mô tả", "Hình ảnh", "Trạng thái"],
+        ["Card màn hình mẫu", 12990000, 14990000, 10, categoryExample, brandExample, "gpu", "Mô tả chi tiết", "https://example.com/image.jpg", "active"],
       ],
     ).toFile("mau-nhap-san-pham.xlsx");
   };
@@ -217,7 +230,6 @@ export default function ProductExcelImporter({ categories, brands, products, onI
         category: findColumn(headers, "category"),
         brand: findColumn(headers, "brand"),
         productType: findColumn(headers, "productType"),
-        shortDescription: findColumn(headers, "shortDescription"),
         description: findColumn(headers, "description"),
         images: findColumn(headers, "images"),
         additionalImages: findColumn(headers, "additionalImages"),
@@ -243,13 +255,14 @@ export default function ProductExcelImporter({ categories, brands, products, onI
         const oldPriceValue = columns.oldPrice >= 0 ? parseNumber(row[columns.oldPrice]) : 0;
         const discountValue = columns.discount >= 0 ? Math.abs(parseNumber(row[columns.discount])) : 0;
         const ratingCountValue = columns.ratingCount >= 0 ? parseNumber(row[columns.ratingCount]) : 0;
-        const stockValue = columns.stock >= 0 ? parseNumber(row[columns.stock]) : 0;
+        const stockCell = cellText(row, columns.stock);
+        const stockValue = columns.stock >= 0 && stockCell ? parseNumber(row[columns.stock]) : 50;
         const categoryText = cellText(row, columns.category);
         const brandText = cellText(row, columns.brand);
         const inferredType = inferProductType(categoryText);
         const typeText = normalize(cellText(row, columns.productType) || inferredType) as ProductType;
         const rawStatus = cellText(row, columns.status);
-        const parsedStatus = parseStatus(rawStatus, stockValue);
+        const parsedStatus = rawStatus ? parseStatus(rawStatus, stockValue) : "active";
         const category = categoryMap.get(normalize(categoryText));
         const brand = brandText ? brandMap.get(normalize(brandText)) : undefined;
         const errors: string[] = [];
@@ -280,7 +293,6 @@ export default function ProductExcelImporter({ categories, brands, products, onI
           brandId: brand?._id,
           brandName: brandText || undefined,
           productType: productTypes.includes(typeText) ? typeText : "other",
-          shortDescription: cellText(row, columns.shortDescription) || undefined,
           description: cellText(row, columns.description) || undefined,
           images: [cellText(row, columns.images), cellText(row, columns.additionalImages)]
             .join(";")
@@ -329,7 +341,6 @@ export default function ProductExcelImporter({ categories, brands, products, onI
           category: categoryId,
           brand: row.brandId,
           productType: row.productType,
-          shortDescription: row.shortDescription,
           description: row.description,
           images: row.images,
           specs: row.specs,

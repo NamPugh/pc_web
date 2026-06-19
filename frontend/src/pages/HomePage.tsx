@@ -1,10 +1,14 @@
 import {
   ArrowRight,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  RotateCcw,
+  Search,
   Star,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
@@ -73,7 +77,7 @@ const belongsToSection = (product: Product, section: ProductSection) => {
   return Boolean(section.fallbackTypes?.includes(product.productType));
 };
 
-function ProductCard({ product }: { product: Product }) {
+function ProductCard({ product, compact = false }: { product: Product; compact?: boolean }) {
   const displayDiscount = product.discount ||
     (product.oldPrice && product.oldPrice > product.price
       ? Math.round((1 - product.price / product.oldPrice) * 100)
@@ -81,7 +85,7 @@ function ProductCard({ product }: { product: Product }) {
   const rating = product.ratingAverage || 0;
 
   return (
-    <article className="group relative flex min-h-full min-w-[250px] flex-col overflow-hidden border border-[#e5e7eb] bg-white transition duration-200 after:pointer-events-none after:absolute after:inset-0 after:z-30 after:border-[4px] after:border-transparent after:content-[''] hover:z-10 hover:after:border-[#3278f6]">
+    <article className={`group relative flex min-h-full flex-col overflow-hidden border border-[#e5e7eb] bg-white transition duration-200 after:pointer-events-none after:absolute after:inset-0 after:z-30 after:border-[4px] after:border-transparent after:content-[''] hover:z-10 hover:after:border-[#3278f6] ${compact ? "min-w-0" : "min-w-[250px]"}`}>
       <Link to={`/products/${product._id}`} className="relative block aspect-square overflow-hidden bg-white p-0.5">
         <span className="absolute left-0 top-0 z-10 bg-[#66ff19] px-2 py-1 text-[11px] font-bold text-black">Best Choice</span>
         <img className="block h-full max-h-full w-full max-w-full object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} loading="lazy" />
@@ -107,6 +111,216 @@ function ProductCard({ product }: { product: Product }) {
         </div>
       </div>
     </article>
+  );
+}
+
+const priceRanges = [
+  { id: "under-10", label: "Dưới 10 triệu", min: 0, max: 10_000_000 },
+  { id: "10-20", label: "10 triệu - 20 triệu", min: 10_000_000, max: 20_000_000 },
+  { id: "20-30", label: "20 triệu - 30 triệu", min: 20_000_000, max: 30_000_000 },
+  { id: "30-50", label: "30 triệu - 50 triệu", min: 30_000_000, max: 50_000_000 },
+  { id: "50-80", label: "50 triệu - 80 triệu", min: 50_000_000, max: 80_000_000 },
+  { id: "over-80", label: "Trên 80 triệu", min: 80_000_000, max: Number.POSITIVE_INFINITY },
+];
+
+const productTypeLabels: Partial<Record<ProductType, string>> = {
+  pc: "PC",
+  laptop: "Laptop",
+  monitor: "Màn hình",
+  gpu: "Card màn hình",
+  cpu: "CPU",
+  mainboard: "Mainboard",
+  ram: "RAM",
+  ssd: "SSD",
+  hdd: "HDD",
+  case: "Vỏ case",
+  psu: "Nguồn",
+  keyboard: "Bàn phím",
+  mouse: "Chuột",
+  headphone: "Tai nghe",
+  cooler: "Tản nhiệt",
+  other: "Khác",
+};
+
+function FilterGroup({ children, title }: { children: ReactNode; title: string }) {
+  return (
+    <div className="border-b border-[#d8dce3] py-5 last:border-b-0">
+      <div className="flex items-center justify-between text-xs font-black uppercase tracking-wide text-[#8d94ac]">
+        <span>{title}</span><ChevronDown className="size-4" />
+      </div>
+      <div className="mt-4 space-y-3">{children}</div>
+    </div>
+  );
+}
+
+function SearchResults({ keyword, loading, products }: { keyword: string; loading: boolean; products: Product[] }) {
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
+  const [selectedRanges, setSelectedRanges] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<ProductType[]>([]);
+  const [sort, setSort] = useState("default");
+
+  const categoryOptions = useMemo(() => {
+    const values = new Map<string, { id: string; name: string; count: number }>();
+    products.forEach((product) => {
+      if (!product.category) return;
+      const current = values.get(product.category._id);
+      values.set(product.category._id, {
+        id: product.category._id,
+        name: product.category.name,
+        count: (current?.count || 0) + 1,
+      });
+    });
+    return [...values.values()].sort((a, b) => b.count - a.count);
+  }, [products]);
+
+  const brandOptions = useMemo(() => {
+    const values = new Map<string, { id: string; name: string; count: number }>();
+    products.forEach((product) => {
+      if (!product.brand) return;
+      const current = values.get(product.brand._id);
+      values.set(product.brand._id, {
+        id: product.brand._id,
+        name: product.brand.name,
+        count: (current?.count || 0) + 1,
+      });
+    });
+    return [...values.values()].sort((a, b) => b.count - a.count);
+  }, [products]);
+
+  const typeOptions = useMemo(() => {
+    const counts = new Map<ProductType, number>();
+    products.forEach((product) => counts.set(product.productType, (counts.get(product.productType) || 0) + 1));
+    return [...counts.entries()]
+      .map(([id, count]) => ({ id, name: productTypeLabels[id] || id.toUpperCase(), count }))
+      .sort((a, b) => b.count - a.count);
+  }, [products]);
+
+  const visibleProducts = useMemo(() => {
+    const filtered = products.filter((product) => {
+      if (selectedCategories.length && (!product.category || !selectedCategories.includes(product.category._id))) return false;
+      if (selectedBrands.length && (!product.brand || !selectedBrands.includes(product.brand._id))) return false;
+      if (selectedTypes.length && !selectedTypes.includes(product.productType)) return false;
+      if (selectedRanges.length && !selectedRanges.some((rangeId) => {
+        const range = priceRanges.find((item) => item.id === rangeId);
+        return range ? product.price >= range.min && product.price < range.max : true;
+      })) return false;
+      return true;
+    });
+
+    return [...filtered].sort((a, b) => {
+      if (sort === "price_asc") return a.price - b.price;
+      if (sort === "price_desc") return b.price - a.price;
+      if (sort === "rating_desc") return (b.ratingAverage || 0) - (a.ratingAverage || 0);
+      if (sort === "sold_desc") return (b.sold || 0) - (a.sold || 0);
+      return 0;
+    });
+  }, [products, selectedBrands, selectedCategories, selectedRanges, selectedTypes, sort]);
+
+  const toggleValue = <T extends string>(values: T[], value: T, setter: (next: T[]) => void) => {
+    setter(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+  };
+
+  const clearFilters = () => {
+    setSelectedCategories([]);
+    setSelectedBrands([]);
+    setSelectedRanges([]);
+    setSelectedTypes([]);
+    setSort("default");
+  };
+
+  const hasFilters = selectedCategories.length + selectedBrands.length + selectedRanges.length + selectedTypes.length > 0;
+
+  return (
+    <section className="mx-auto w-full max-w-[1600px]">
+      <div className="grid items-start gap-5 lg:grid-cols-[290px_minmax(0,1fr)]">
+        <aside className="border border-[#e5e7eb] bg-white px-5 lg:sticky lg:top-40">
+          <div className="flex items-center justify-between border-b border-[#d8dce3] py-5">
+            <h2 className="text-xl font-black text-[#1d2939]">Bộ lọc sản phẩm</h2>
+            {hasFilters ? <button className="text-[#3278f6]" onClick={clearFilters} title="Xóa bộ lọc" type="button"><RotateCcw className="size-4" /></button> : null}
+          </div>
+
+          <FilterGroup title="Danh mục">
+            {categoryOptions.map((option) => (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+                <input checked={selectedCategories.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedCategories, option.id, setSelectedCategories)} type="checkbox" />
+                <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+              </label>
+            ))}
+          </FilterGroup>
+
+          {brandOptions.length ? (
+            <FilterGroup title="Hãng sản xuất">
+              {brandOptions.map((option) => (
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+                  <input checked={selectedBrands.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedBrands, option.id, setSelectedBrands)} type="checkbox" />
+                  <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+                </label>
+              ))}
+            </FilterGroup>
+          ) : null}
+
+          <FilterGroup title="Khoảng giá (VNĐ)">
+            {priceRanges.map((range) => {
+              const count = products.filter((product) => product.price >= range.min && product.price < range.max).length;
+              if (!count) return null;
+              return (
+                <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={range.id}>
+                  <input checked={selectedRanges.includes(range.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedRanges, range.id, setSelectedRanges)} type="checkbox" />
+                  <span className="min-w-0 flex-1">{range.label}</span><span className="text-xs text-[#98a2b3]">[{count}]</span>
+                </label>
+              );
+            })}
+          </FilterGroup>
+
+          <FilterGroup title="Loại sản phẩm">
+            {typeOptions.map((option) => (
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+                <input checked={selectedTypes.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedTypes, option.id, setSelectedTypes)} type="checkbox" />
+                <span className="min-w-0 flex-1">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+              </label>
+            ))}
+          </FilterGroup>
+        </aside>
+
+        <div className="min-w-0 border border-[#e5e7eb] bg-white p-4 sm:p-5">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#3278f6]">Kết quả tìm kiếm</p>
+              <h1 className="mt-1 border-b-[3px] border-[#3278f6] pb-1 text-2xl font-black uppercase text-[#29324e]">{keyword}</h1>
+            </div>
+            <div className="flex items-center gap-3 text-sm text-[#8d94ac]">
+              {!loading ? <span>{visibleProducts.length} sản phẩm</span> : null}
+              <span className="h-6 w-px bg-[#d0d5dd]" />
+              <label className="flex items-center gap-2">
+                <span className="hidden sm:inline">Hiển thị theo:</span>
+                <select className="h-10 border border-[#d0d5dd] bg-white px-3 font-bold text-[#344054] outline-none focus:border-[#3278f6]" onChange={(event) => setSort(event.target.value)} value={sort}>
+                  <option value="default">Mặc định</option>
+                  <option value="price_asc">Giá tăng dần</option>
+                  <option value="price_desc">Giá giảm dần</option>
+                  <option value="rating_desc">Đánh giá cao</option>
+                  <option value="sold_desc">Bán chạy</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="p-14 text-center text-[#8d94ac]">Đang tìm sản phẩm...</div>
+          ) : visibleProducts.length === 0 ? (
+            <div className="mt-5 border border-dashed border-[#d0d5dd] p-14 text-center">
+              <Search className="mx-auto size-9 text-[#98a2b3]" />
+              <h2 className="mt-3 font-bold text-[#344054]">Không có sản phẩm phù hợp bộ lọc</h2>
+              <button className="mt-3 text-sm font-bold text-[#3278f6]" onClick={clearFilters} type="button">Xóa bộ lọc</button>
+            </div>
+          ) : (
+            <div className="mt-5 grid gap-px bg-[#e5e7eb] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              {visibleProducts.map((product) => <ProductCard compact key={product._id} product={product} />)}
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -328,7 +542,7 @@ export default function HomePage() {
 
   return (
     <section className="space-y-8 pb-8">
-      <section className="bg-[#f5f5f5]">
+      {!searchKeyword ? <section className="bg-[#f5f5f5]">
         <div className="mx-auto grid max-w-[1600px] gap-3 px-3 lg:grid-cols-[minmax(0,1fr)]">
           <div className="relative overflow-hidden bg-white">
             <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeBanner * 100}%)` }}>
@@ -367,9 +581,13 @@ export default function HomePage() {
             ))}
           </div>
         </div>
-      </section>
+      </section> : null}
 
-      <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
+      {searchKeyword ? (
+        <SearchResults key={searchKeyword} keyword={searchKeyword} loading={loading} products={products} />
+      ) : null}
+
+      {!searchKeyword ? <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
           <div className="flex flex-wrap items-center gap-4">
             <h2 className="border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-none text-black">Deal giờ vàng</h2>
@@ -415,9 +633,9 @@ export default function HomePage() {
             </button>
           </div>
         )}
-      </section>
+      </section> : null}
 
-      <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
+      {!searchKeyword ? <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
         <SectionHeader title="Chuyên trang khuyến mãi" keyword="Khuyến mãi" />
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(managedPromotions.length ? managedPromotions : promotionBanners).map((banner) =>
@@ -439,9 +657,9 @@ export default function HomePage() {
             ),
           )}
         </div>
-      </section>
+      </section> : null}
 
-      {(managedProductSections.length ? managedProductSections : productSections).map((section) => {
+      {!searchKeyword ? (managedProductSections.length ? managedProductSections : productSections).map((section) => {
         const isManagedSection = "bannerImage" in section;
         const sectionProducts = isManagedSection
           ? section.products.slice(0, 4)
@@ -469,7 +687,7 @@ export default function HomePage() {
             </section>
           </div>
         );
-      })}
+      }) : null}
 
       <section className="mx-auto grid max-w-[1600px] gap-4 px-3 lg:grid-cols-[1fr_1fr]">
         <div className="border border-[#ededed] bg-white p-5">

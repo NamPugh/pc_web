@@ -78,7 +78,6 @@ export type Product = {
   category?: Category;
   brand?: Brand;
   images?: string[];
-  shortDescription?: string;
   description?: string;
   productType: ProductType;
   specs?: Record<string, unknown>;
