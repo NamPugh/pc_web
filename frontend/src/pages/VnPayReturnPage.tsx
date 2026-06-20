@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowRight, Check, CreditCard, LoaderCircle, ReceiptText, RefreshCw, ShoppingBag, Sparkles, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, CreditCard, LoaderCircle, ReceiptText, RefreshCw, ShoppingBag, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router";
