@@ -19,13 +19,16 @@ import homeSectionRoute from './routes/homeSectionRoute.js';
 import paymentRoute from './routes/paymentRoute.js';
 import errorMiddleware from './middlewares/errorMiddleware.js';
 dotenv.config();
-const PORT = process.env.PORT || 5001;
+const PORT = process.env.PORT || 5000;
 const app = express();
 
 // middlewares
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.resolve('uploads')));
+app.get('/api/health', (_req, res) => {
+    res.status(200).json({ success: true, service: 'backend' });
+});
 
 // public routes
 app.use('/api/auth', authRoute);
