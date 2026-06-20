@@ -56,9 +56,14 @@ export const orderApi = {
     paymentMethod: "cod" | "banking" | "momo" | "vnpay";
     note?: string;
     selectedProductIds?: string[];
-  }) => api.post<ApiItem<Order>>("/orders", payload),
+  }) => api.post<ApiItem<Order> & { cart: Cart; paymentUrl?: string | null }>("/orders", payload),
   mine: () => api.get<ApiList<Order>>("/orders/my-orders"),
   cancel: (id: string) => api.put<ApiItem<Order>>(`/orders/${id}/cancel`),
+};
+
+export const paymentApi = {
+  vnPayReturn: (params: URLSearchParams) =>
+    api.get<ApiItem<Order> & { code: string; message: string }>(`/payments/vnpay/return?${params.toString()}`),
 };
 
 export const buildPcApi = {

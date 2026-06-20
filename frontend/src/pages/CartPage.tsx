@@ -31,7 +31,7 @@ export default function CartPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<"cod" | "banking">("cod");
+  const [paymentMethod, setPaymentMethod] = useState<"cod" | "banking" | "vnpay">("cod");
   const [form, setForm] = useState({
     fullName: user?.userName || "",
     phone: user?.phone || "",
@@ -170,11 +170,15 @@ export default function CartPage() {
 
     setCheckingOut(true);
     try {
-      await orderApi.create({
+      const { data } = await orderApi.create({
         customerInfo: form,
         paymentMethod,
         selectedProductIds: [...selectedIds],
       });
+      if (paymentMethod === "vnpay" && data.paymentUrl) {
+        window.location.assign(data.paymentUrl);
+        return;
+      }
       await refreshCart();
       setSelectedIds(new Set());
       toast.success(`Đặt thành công ${selectedQuantity} sản phẩm`);
@@ -340,7 +344,7 @@ export default function CartPage() {
 
             <div>
               <p className="mb-2 text-xs font-bold uppercase tracking-wide text-[#667085]">Phương thức thanh toán</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid gap-2 sm:grid-cols-3">
                 <button className={`border p-3 text-left text-sm font-bold transition ${paymentMethod === "cod" ? "border-[#3278f6] bg-[#eef4ff] text-[#3278f6]" : "border-[#d0d5dd] text-[#667085]"}`} onClick={() => setPaymentMethod("cod")} type="button">
                   COD
                   <small className="mt-1 block font-normal">Khi nhận hàng</small>
@@ -348,6 +352,10 @@ export default function CartPage() {
                 <button className={`border p-3 text-left text-sm font-bold transition ${paymentMethod === "banking" ? "border-[#3278f6] bg-[#eef4ff] text-[#3278f6]" : "border-[#d0d5dd] text-[#667085]"}`} onClick={() => setPaymentMethod("banking")} type="button">
                   Chuyển khoản
                   <small className="mt-1 block font-normal">Qua ngân hàng</small>
+                </button>
+                <button className={`border p-3 text-left text-sm font-bold transition ${paymentMethod === "vnpay" ? "border-[#3278f6] bg-[#eef4ff] text-[#3278f6]" : "border-[#d0d5dd] text-[#667085]"}`} onClick={() => setPaymentMethod("vnpay")} type="button">
+                  VNPay
+                  <small className="mt-1 block font-normal">QR, ATM, thẻ quốc tế</small>
                 </button>
               </div>
             </div>
@@ -363,7 +371,7 @@ export default function CartPage() {
             </div>
 
             <Button className="h-12 w-full rounded-none bg-[#3278f6] text-base font-bold hover:bg-[#2860c5]" disabled={!selectedIds.size || checkingOut}>
-              {checkingOut ? "Đang xử lý..." : `Đặt ${selectedQuantity} sản phẩm`}
+              {checkingOut ? "Đang xử lý..." : paymentMethod === "vnpay" ? "Thanh toán qua VNPay" : `Đặt ${selectedQuantity} sản phẩm`}
             </Button>
             {!selectedIds.size ? <p className="text-center text-xs font-semibold text-[#d97706]">Hãy chọn sản phẩm bạn muốn mua.</p> : null}
           </div>

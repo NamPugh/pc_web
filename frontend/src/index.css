@@ -131,3 +131,66 @@
     @apply border-b border-[#ededed] bg-white px-4 py-3 text-lg font-bold uppercase text-[#29324e];
   }
 }
+
+@keyframes vnpay-confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -12vh, 0) rotate(0deg);
+  }
+  8% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(36px, 82vh, 0) rotate(var(--confetti-rotation));
+  }
+}
+
+@keyframes vnpay-result-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.vnpay-confetti {
+  position: absolute;
+  top: 0;
+  left: var(--confetti-left);
+  width: var(--confetti-size);
+  height: calc(var(--confetti-size) * 1.8);
+  background: var(--confetti-color);
+  border-radius: 2px;
+  opacity: 0;
+  animation: vnpay-confetti-fall var(--confetti-duration) ease-in var(--confetti-delay) 2 both;
+}
+
+.vnpay-confetti:nth-child(3n) {
+  border-radius: 999px;
+}
+
+.vnpay-confetti:nth-child(4n) {
+  height: var(--confetti-size);
+}
+
+.vnpay-result-icon {
+  animation: vnpay-result-pop 650ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vnpay-confetti {
+    display: none;
+  }
+
+  .vnpay-result-icon {
+    animation: none;
+  }
+}

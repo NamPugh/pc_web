@@ -2,10 +2,21 @@ import Order from '../models/Order.js';
 import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import FlashSale from '../models/FlashSale.js';
+import { createVnPayUrl, getVnPayConfig } from '../utils/vnpay.js';
 
 export const createOrder = async (req, res) => {
   try {
     const { customerInfo, paymentMethod = "cod", note = "", selectedProductIds = [] } = req.body;
+    const allowedPaymentMethods = ["cod", "banking", "vnpay"];
+    if (!allowedPaymentMethods.includes(paymentMethod)) {
+      return res.status(400).json({ success: false, message: "Phương thức thanh toán không hợp lệ" });
+    }
+    if (paymentMethod === "vnpay") {
+      const config = getVnPayConfig();
+      if (!config.tmnCode || !config.hashSecret) {
+        return res.status(503).json({ success: false, message: "VNPay chưa được cấu hình trên máy chủ" });
+      }
+    }
 
     const cart = await Cart.findOne({ user: req.user._id }).populate("items.product");
 
@@ -104,11 +115,19 @@ export const createOrder = async (req, res) => {
     );
     await cart.save();
 
+    const paymentUrl = paymentMethod === "vnpay"
+      ? createVnPayUrl({
+          order,
+          ipAddress: String(req.headers["x-forwarded-for"] || req.socket.remoteAddress || "127.0.0.1").split(",")[0].trim()
+        })
+      : null;
+
     res.status(201).json({
       success: true,
-      message: "Tạo đơn hàng thành công",
+      message: paymentMethod === "vnpay" ? "Đã tạo giao dịch VNPay" : "Tạo đơn hàng thành công",
       data: order,
-      cart
+      cart,
+      paymentUrl
     });
   } catch (error) {
     res.status(400).json({ success: false, message: "Lỗi tạo đơn hàng", error: error.message });

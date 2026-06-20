@@ -63,6 +63,13 @@ const orderSchema = new mongoose.Schema(
       enum: ["unpaid", "paid"],
       default: "unpaid"
     },
+    paymentDetails: {
+      transactionNo: { type: String, default: "" },
+      bankCode: { type: String, default: "" },
+      responseCode: { type: String, default: "" },
+      payDate: { type: String, default: "" },
+      paidAt: { type: Date, default: null }
+    },
     orderStatus: {
       type: String,
       enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],
