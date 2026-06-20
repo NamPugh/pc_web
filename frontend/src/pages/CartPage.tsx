@@ -81,6 +81,17 @@ export default function CartPage() {
     };
   }, [setGlobalCart]);
 
+  useEffect(() => {
+    const handleReturnFromPayment = () => {
+      const pendingOrderId = sessionStorage.getItem("pendingVnPayOrder");
+      if (pendingOrderId) {
+        navigate(`/payment/vnpay-return?cancelled=1&orderId=${pendingOrderId}`, { replace: true });
+      }
+    };
+    window.addEventListener("pageshow", handleReturnFromPayment);
+    return () => window.removeEventListener("pageshow", handleReturnFromPayment);
+  }, [navigate]);
+
   const selectedItems = useMemo(
     () => cart?.items.filter((item) => selectedIds.has(item.product._id)) || [],
     [cart, selectedIds],
@@ -176,6 +187,7 @@ export default function CartPage() {
         selectedProductIds: [...selectedIds],
       });
       if (paymentMethod === "vnpay" && data.paymentUrl) {
+        sessionStorage.setItem("pendingVnPayOrder", data.data._id);
         window.location.assign(data.paymentUrl);
         return;
       }

@@ -64,6 +64,7 @@ export const orderApi = {
 export const paymentApi = {
   vnPayReturn: (params: URLSearchParams) =>
     api.get<ApiItem<Order> & { code: string; message: string }>(`/payments/vnpay/return?${params.toString()}`),
+  cancelVnPay: (orderId: string) => api.post(`/payments/vnpay/cancel/${orderId}`),
 };
 
 export const buildPcApi = {

@@ -70,6 +70,10 @@ const orderSchema = new mongoose.Schema(
       payDate: { type: String, default: "" },
       paidAt: { type: Date, default: null }
     },
+    inventoryCommitted: {
+      type: Boolean,
+      default: false
+    },
     orderStatus: {
       type: String,
       enum: ["pending", "confirmed", "shipping", "completed", "cancelled"],

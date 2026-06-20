@@ -87,33 +87,36 @@ export const createOrder = async (req, res) => {
       items: orderItems,
       totalPrice,
       paymentMethod,
-      note
+      note,
+      inventoryCommitted: paymentMethod !== "vnpay"
     });
 
-    for (const item of selectedCartItems) {
-      await Product.findByIdAndUpdate(item.product._id, {
-        $inc: {
-          stock: -item.quantity,
-          sold: item.quantity
+    if (paymentMethod !== "vnpay") {
+      for (const item of selectedCartItems) {
+        await Product.findByIdAndUpdate(item.product._id, {
+          $inc: {
+            stock: -item.quantity,
+            sold: item.quantity
+          }
+        });
+        if (item.flashSale && item.flashSaleItem) {
+          await FlashSale.updateOne(
+            { _id: item.flashSale, "items._id": item.flashSaleItem },
+            { $inc: { "items.$.sold": item.quantity } }
+          );
         }
-      });
-      if (item.flashSale && item.flashSaleItem) {
-        await FlashSale.updateOne(
-          { _id: item.flashSale, "items._id": item.flashSaleItem },
-          { $inc: { "items.$.sold": item.quantity } }
-        );
       }
-    }
 
-    const orderedProductIds = new Set(selectedCartItems.map((item) => item.product._id.toString()));
-    cart.items = cart.items.filter(
-      (item) => !orderedProductIds.has(item.product._id.toString())
-    );
-    cart.totalPrice = cart.items.reduce(
-      (sum, item) => sum + item.price * item.quantity,
-      0
-    );
-    await cart.save();
+      const orderedProductIds = new Set(selectedCartItems.map((item) => item.product._id.toString()));
+      cart.items = cart.items.filter(
+        (item) => !orderedProductIds.has(item.product._id.toString())
+      );
+      cart.totalPrice = cart.items.reduce(
+        (sum, item) => sum + item.price * item.quantity,
+        0
+      );
+      await cart.save();
+    }
 
     const paymentUrl = paymentMethod === "vnpay"
       ? createVnPayUrl({

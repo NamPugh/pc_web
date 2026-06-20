@@ -22,10 +22,22 @@ const confettiPieces = Array.from({ length: 54 }, (_, index) => ({
 
 export default function VnPayReturnPage() {
   const [searchParams] = useSearchParams();
-  const [result, setResult] = useState<Result | null>(null);
+  const locallyCancelled = searchParams.get("cancelled") === "1";
+  const pendingOrderId = searchParams.get("orderId") || sessionStorage.getItem("pendingVnPayOrder");
+  const [result, setResult] = useState<Result | null>(() =>
+    locallyCancelled
+      ? { success: false, message: "Bạn đã rời khỏi cổng VNPay trước khi hoàn tất thanh toán." }
+      : null
+  );
   const setCart = useCartStore((state) => state.setCart);
 
   useEffect(() => {
+    sessionStorage.removeItem("pendingVnPayOrder");
+    if (locallyCancelled) {
+      if (pendingOrderId) void paymentApi.cancelVnPay(pendingOrderId);
+      return;
+    }
+
     let active = true;
     void paymentApi.vnPayReturn(searchParams)
       .then(({ data }) => {
@@ -43,7 +55,7 @@ export default function VnPayReturnPage() {
     return () => {
       active = false;
     };
-  }, [searchParams, setCart]);
+  }, [locallyCancelled, pendingOrderId, searchParams, setCart]);
 
   if (!result) {
     return <section className="grid min-h-[55vh] place-items-center py-8"><div className="text-center"><LoaderCircle className="mx-auto size-10 animate-spin text-[#3278f6]" /><p className="mt-4 font-bold text-[#475467]">Đang xác minh giao dịch VNPay...</p></div></section>;
@@ -124,7 +136,7 @@ export default function VnPayReturnPage() {
               <Link to="/orders"><ReceiptText className="size-4" /> Xem đơn hàng <ArrowRight className="size-4" /></Link>
             </Button>
             <Button className="h-12 rounded-none border-[#d0d5dd] px-6 font-bold text-[#344054] hover:border-[#3278f6] hover:text-[#3278f6]" variant="outline" asChild>
-              <Link to={result.success ? "/" : "/cart"}><ShoppingBag className="size-4" /> {result.success ? "Tiếp tục mua hàng" : "Về giỏ hàng"}</Link>
+              <Link to={result.success ? "/" : "/cart"}><ShoppingBag className="size-4" /> {result.success ? "Tiếp tục mua hàng" : "Quay lại mua hàng"}</Link>
             </Button>
           </div>
         </div>
