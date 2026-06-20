@@ -1,15 +1,12 @@
 import {
   ArrowRight,
-  CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Minus,
   PackageCheck,
   Plus,
-  RotateCcw,
-  ShieldCheck,
   ShoppingCart,
   Star,
-  Truck,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
@@ -121,6 +118,15 @@ export default function ProductDetailPage() {
   }
 
   const images = product.images?.length ? product.images : ["/icons.svg"];
+  const activeImageIndex = Math.max(images.indexOf(activeImage), 0);
+  const showPreviousImage = () => {
+    const previousIndex = (activeImageIndex - 1 + images.length) % images.length;
+    setActiveImage(images[previousIndex]);
+  };
+  const showNextImage = () => {
+    const nextIndex = (activeImageIndex + 1) % images.length;
+    setActiveImage(images[nextIndex]);
+  };
   const displayPrice = dealItem ? dealItem.dealPrice : product.price;
   const originalPrice = dealItem ? product.price : product.oldPrice;
   const discount = originalPrice && originalPrice > displayPrice
@@ -145,6 +151,26 @@ export default function ProductDetailPage() {
             {discount > 0 ? <span className="absolute left-0 top-0 z-10 bg-[#fb4e4e] px-3 py-1.5 text-sm font-black text-white">-{discount}%</span> : null}
             {dealItem ? <span className="absolute right-0 top-0 z-10 bg-[#f97316] px-3 py-1.5 text-xs font-black uppercase text-white">Deal giờ vàng</span> : null}
             <img className="h-full w-full object-contain" src={activeImage} alt={product.name} />
+            {images.length > 1 ? (
+              <>
+                <button
+                  aria-label="Xem ảnh trước"
+                  className="absolute left-3 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-[#dfe4eb] bg-white/95 text-[#29324e] shadow-md transition hover:border-[#3278f6] hover:bg-[#3278f6] hover:text-white"
+                  onClick={showPreviousImage}
+                  type="button"
+                >
+                  <ChevronLeft className="size-6" />
+                </button>
+                <button
+                  aria-label="Xem ảnh tiếp theo"
+                  className="absolute right-3 top-1/2 z-10 grid size-11 -translate-y-1/2 place-items-center rounded-full border border-[#dfe4eb] bg-white/95 text-[#29324e] shadow-md transition hover:border-[#3278f6] hover:bg-[#3278f6] hover:text-white"
+                  onClick={showNextImage}
+                  type="button"
+                >
+                  <ChevronRight className="size-6" />
+                </button>
+              </>
+            ) : null}
           </div>
           <div className="mt-3 grid grid-flow-col auto-cols-[88px] gap-2 overflow-x-auto pb-1">
             {images.map((image, index) => (
@@ -157,16 +183,6 @@ export default function ProductDetailPage() {
                 <img className="h-full w-full object-contain" src={image} alt={`${product.name} ${index + 1}`} />
               </button>
             ))}
-          </div>
-          <div className="mt-4 grid grid-cols-3 border border-[#e5e7eb] bg-[#f8fafc]">
-            {[
-              { icon: ShieldCheck, label: "Chính hãng" },
-              { icon: RotateCcw, label: "Đổi trả rõ ràng" },
-              { icon: Truck, label: "Giao toàn quốc" },
-            ].map((item) => {
-              const Icon = item.icon;
-              return <div className="flex flex-col items-center gap-2 border-r border-[#e5e7eb] p-3 text-center text-xs font-bold text-[#475467] last:border-r-0" key={item.label}><Icon className="size-5 text-[#3278f6]" />{item.label}</div>;
-            })}
           </div>
         </section>
 
@@ -213,9 +229,9 @@ export default function ProductDetailPage() {
               ) : <p className="mt-3 border border-dashed border-[#d0d5dd] p-5 text-sm text-[#8d94ac]">Thông số đang được cập nhật.</p>}
             </div>
 
-            <aside className="border border-[#cbdcff] bg-[#f8faff] p-4">
+            <aside className="self-start border border-[#cbdcff] bg-[#f8faff] p-4">
               <h2 className="font-black text-[#1d2939]">Mua sản phẩm</h2>
-              <p className="mt-1 text-xs text-[#667085]">{status.purchasable ? `Còn ${product.stock} sản phẩm trong kho` : status.label}</p>
+              <p className="mt-1 text-xs text-[#667085]">{status.purchasable ? `Còn ${product.stock} sản phẩm` : status.label}</p>
               <div className="mt-4 flex h-11 items-center border border-[#d0d5dd] bg-white">
                 <button className="grid h-full w-11 place-items-center text-[#667085] hover:bg-[#eef4ff] hover:text-[#3278f6]" disabled={!status.purchasable || quantity <= 1} onClick={() => setQuantity((current) => Math.max(1, current - 1))} type="button"><Minus className="size-4" /></button>
                 <input className="h-full min-w-0 flex-1 border-x border-[#d0d5dd] text-center font-black outline-none" disabled={!status.purchasable} max={maxQuantity} min={1} onChange={(event) => setQuantity(Math.min(maxQuantity, Math.max(1, Number(event.target.value) || 1)))} type="number" value={quantity} />
@@ -225,10 +241,6 @@ export default function ProductDetailPage() {
                 {adding ? "Đang thêm..." : <><ShoppingCart className="size-5" />Thêm vào giỏ hàng</>}
               </Button>
               <Link className="mt-2 flex h-11 items-center justify-center border border-[#3278f6] text-sm font-bold text-[#3278f6] transition hover:bg-[#eef4ff]" to="/cart">Xem giỏ hàng <ArrowRight className="ml-2 size-4" /></Link>
-              <div className="mt-4 space-y-2 border-t border-[#dbe5f8] pt-4 text-xs font-semibold text-[#667085]">
-                <p className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[#16a34a]" /> Kiểm tra hàng trước khi nhận</p>
-                <p className="flex items-center gap-2"><CheckCircle2 className="size-4 text-[#16a34a]" /> Tư vấn cấu hình miễn phí</p>
-              </div>
             </aside>
           </div>
         </section>
@@ -247,15 +259,41 @@ export default function ProductDetailPage() {
           </section>
         </div>
 
-        <section className="border border-[#e5e7eb] bg-white xl:sticky xl:top-40">
-          <header className="border-b border-[#e5e7eb] px-5 py-4">
+        <section className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white xl:sticky xl:top-40">
+          <header className="border-b border-[#e5e7eb] px-5 py-5">
             <h2 className="text-xl font-black uppercase text-[#1d2939]">Đánh giá sản phẩm</h2>
-            <div className="mt-3 flex items-end gap-3"><strong className="text-4xl font-black text-[#3278f6]">{product.ratingAverage?.toFixed(1) || "0.0"}</strong><div><div className="flex text-[#f7b500]">{Array.from({ length: 5 }, (_, index) => <Star className={`size-4 ${index < Math.round(product.ratingAverage || 0) ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />)}</div><p className="mt-1 text-xs text-[#8d94ac]">{reviews.length} nhận xét</p></div></div>
+            <div className="mt-4 flex items-center gap-4">
+              <strong className="text-4xl font-black text-[#3278f6]">{product.ratingAverage?.toFixed(1) || "0.0"}</strong>
+              <div>
+                <div className="flex gap-1 text-[#f7b500]">{Array.from({ length: 5 }, (_, index) => <Star className={`size-5 ${index < Math.round(product.ratingAverage || 0) ? "fill-current" : "fill-[#d7d9df] text-[#d7d9df]"}`} key={index} />)}</div>
+                <p className="mt-1 text-xs text-[#8d94ac]">{reviews.length} nhận xét</p>
+              </div>
+            </div>
           </header>
-          <form className="grid gap-3 border-b border-[#e5e7eb] p-5" onSubmit={submitReview}>
-            <label><span className="mb-1 block text-xs font-bold text-[#667085]">Mức đánh giá</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setReviewForm({ ...reviewForm, rating: Number(event.target.value) })} value={reviewForm.rating}>{[5, 4, 3, 2, 1].map((rating) => <option key={rating} value={rating}>{rating} sao</option>)}</select></label>
-            <textarea className="min-h-24 border border-[#d0d5dd] p-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} placeholder="Chia sẻ trải nghiệm của bạn..." value={reviewForm.comment} />
-            <Button className="h-11 rounded-none bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={submittingReview}>{submittingReview ? "Đang gửi..." : "Gửi đánh giá"}</Button>
+          <form className="grid gap-4 border-b border-[#e5e7eb] bg-[#fbfcfe] p-5" onSubmit={submitReview}>
+            <div>
+              <span className="mb-2 block text-xs font-bold text-[#667085]">Mức đánh giá</span>
+              <div className="flex items-center gap-2">
+                {Array.from({ length: 5 }, (_, index) => {
+                  const rating = index + 1;
+                  const selected = rating <= reviewForm.rating;
+                  return (
+                    <button
+                      aria-label={`${rating} sao`}
+                      className={`grid size-10 place-items-center rounded-lg border transition ${selected ? "border-[#f7b500] bg-[#fff9e8] text-[#f7b500]" : "border-[#dfe3ea] bg-white text-[#c9ced8] hover:border-[#f7b500] hover:text-[#f7b500]"}`}
+                      key={rating}
+                      onClick={() => setReviewForm({ ...reviewForm, rating })}
+                      type="button"
+                    >
+                      <Star className={`size-5 ${selected ? "fill-current" : ""}`} />
+                    </button>
+                  );
+                })}
+                <span className="ml-1 text-sm font-bold text-[#344054]">{reviewForm.rating} sao</span>
+              </div>
+            </div>
+            <textarea className="min-h-24 resize-y rounded-lg border border-[#d0d5dd] bg-white p-3 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#3278f6] focus:ring-4 focus:ring-[#3278f6]/10" onChange={(event) => setReviewForm({ ...reviewForm, comment: event.target.value })} placeholder="Chia sẻ trải nghiệm của bạn..." value={reviewForm.comment} />
+            <Button className="h-11 rounded-lg bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={submittingReview}>{submittingReview ? "Đang gửi..." : "Gửi đánh giá"}</Button>
           </form>
           <div className="max-h-[520px] divide-y divide-[#eef0f3] overflow-y-auto">
             {reviews.map((review) => (

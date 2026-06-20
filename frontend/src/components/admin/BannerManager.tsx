@@ -1,9 +1,10 @@
-import { Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, Plus, RotateCcw, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, Plus, RotateCcw, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 
 import { adminApi, catalogApi, getErrorMessage } from "@/api/client";
+import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@/components/ui/button";
 import type { Banner } from "@/types";
 
@@ -66,6 +67,8 @@ export default function BannerManager() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Banner | null>(null);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -189,16 +192,19 @@ export default function BannerManager() {
     }
   };
 
-  const deleteBanner = async (banner: Banner) => {
-    if (!window.confirm(`Xóa banner "${banner.title}"?`)) return;
-
+  const deleteBanner = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await adminApi.deleteBanner(banner._id);
-      if (editingId === banner._id) resetForm();
-      setBanners((current) => current.filter((item) => item._id !== banner._id));
+      await adminApi.deleteBanner(deleteTarget._id);
+      if (editingId === deleteTarget._id) resetForm();
+      setBanners((current) => current.filter((item) => item._id !== deleteTarget._id));
+      setDeleteTarget(null);
       toast.success("Đã xóa banner");
     } catch (error) {
       toast.error(getErrorMessage(error));
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -253,16 +259,15 @@ export default function BannerManager() {
           <p className="mt-1 text-sm text-[#8d94ac]">Thêm, sửa, ẩn và sắp xếp banner theo từng vị trí.</p>
         </div>
         <div className="flex items-center gap-2">
-          <select
-            className="h-10 border border-[#ededed] bg-[#f5f5f5] px-3 text-sm font-semibold text-[#29324e]"
+          <AdminSelect
+            className="h-10 min-w-52"
+            options={[
+              { value: "all", label: "Tất cả vị trí" },
+              ...positions,
+            ]}
             value={filter}
-            onChange={(event) => setFilter(event.target.value)}
-          >
-            <option value="all">Tất cả vị trí</option>
-            {positions.map((position) => (
-              <option key={position.value} value={position.value}>{position.label}</option>
-            ))}
-          </select>
+            onValueChange={setFilter}
+          />
           <Button className="rounded-none border border-[#3278f6] bg-white text-[#3278f6] hover:bg-[#eef4ff]" disabled={saving} onClick={() => void importDefaultBanners()} type="button">
             <ImagePlus className="size-4" />
             Nạp banner mặc định
@@ -315,7 +320,7 @@ export default function BannerManager() {
                       <button className="grid size-9 place-items-center text-[#29324e] transition hover:bg-[#f5f5f5]" onClick={() => void toggleBanner(banner)} title={banner.isActive === false ? "Hiện banner" : "Ẩn banner"} type="button">
                         {togglingIds.has(banner._id) ? <LoaderCircle className="size-4 animate-spin" /> : banner.isActive === false ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </button>
-                      <button className="grid size-9 place-items-center text-[#fb4e4e] transition hover:bg-[#fff1f1]" onClick={() => void deleteBanner(banner)} title="Xóa banner" type="button">
+                      <button className="grid size-9 place-items-center text-[#fb4e4e] transition hover:bg-[#fff1f1]" onClick={() => setDeleteTarget(banner)} title="Xóa banner" type="button">
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -382,11 +387,7 @@ export default function BannerManager() {
             <div className="grid grid-cols-[1fr_100px] gap-3">
               <label className="block">
                 <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Vị trí</span>
-                <select className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" value={form.position} onChange={(event) => setForm({ ...form, position: event.target.value })}>
-                  {positions.map((position) => (
-                    <option key={position.value} value={position.value}>{position.label}</option>
-                  ))}
-                </select>
+                <AdminSelect className="w-full" options={positions} value={form.position} onValueChange={(position) => setForm({ ...form, position })} />
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Thứ tự</span>
@@ -403,6 +404,39 @@ export default function BannerManager() {
           </div>
         </form>
       </div>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-[140] grid place-items-center bg-[#101828]/55 p-4" onMouseDown={() => !deleting && setDeleteTarget(null)}>
+          <section className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-[0_24px_70px_rgba(16,24,40,0.28)]" onMouseDown={(event) => event.stopPropagation()}>
+            <header className="flex items-center justify-between border-b border-[#eaecf0] px-5 py-4">
+              <h2 className="text-lg font-bold text-[#101828]">Xác nhận xóa banner</h2>
+              <button className="grid size-9 place-items-center rounded-lg text-[#667085] transition hover:bg-[#f2f4f7]" disabled={deleting} onClick={() => setDeleteTarget(null)} type="button">
+                <X className="size-5" />
+              </button>
+            </header>
+            <div className="p-5">
+              <div className="flex gap-4">
+                <span className="grid size-11 shrink-0 place-items-center rounded-full bg-[#fef3f2] text-[#d92d20]">
+                  <AlertTriangle className="size-5" />
+                </span>
+                <div>
+                  <p className="font-bold text-[#344054]">Bạn có chắc muốn xóa banner này?</p>
+                  <p className="mt-2 text-sm leading-6 text-[#667085]">
+                    Banner <b className="text-[#344054]">“{deleteTarget.title}”</b> sẽ bị xóa khỏi hệ thống.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <footer className="flex justify-end gap-2 border-t border-[#eaecf0] bg-[#f9fafb] px-5 py-4">
+              <Button className="rounded-lg" disabled={deleting} onClick={() => setDeleteTarget(null)} type="button" variant="outline">Hủy</Button>
+              <Button className="rounded-lg bg-[#d92d20] text-white hover:bg-[#b42318]" disabled={deleting} onClick={() => void deleteBanner()} type="button">
+                {deleting ? <LoaderCircle className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+                {deleting ? "Đang xóa..." : "Xóa banner"}
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
     </section>
   );
 }

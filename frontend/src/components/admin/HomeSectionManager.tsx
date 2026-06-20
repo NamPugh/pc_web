@@ -4,6 +4,7 @@ import type { FormEvent } from "react";
 import { toast } from "sonner";
 
 import { adminApi, catalogApi, getErrorMessage } from "@/api/client";
+import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@/components/ui/button";
 import type { Category, HomeSection, Product } from "@/types";
 
@@ -249,7 +250,7 @@ export default function HomeSectionManager() {
 
   return (
     <div className="space-y-5">
-      <section className="border border-[#e5e7eb] bg-white">
+      <section className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e7eb] p-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-wider text-[#3278f6]">Giao diện trang chủ</p>
@@ -269,10 +270,10 @@ export default function HomeSectionManager() {
         <div className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_430px]">
           <div className="space-y-3">
             {loading ? <p className="p-8 text-center text-sm text-[#8d94ac]">Đang tải cấu hình...</p> : null}
-            {!loading && !sections.length ? <p className="border border-dashed border-[#d0d5dd] p-8 text-center text-sm text-[#8d94ac]">Chưa có cấu hình. Có thể dùng nút “Nạp cấu hình hiện tại”.</p> : null}
+            {!loading && !sections.length ? <p className="rounded-xl border border-dashed border-[#d0d5dd] p-8 text-center text-sm text-[#8d94ac]">Chưa có cấu hình. Có thể dùng nút “Nạp cấu hình hiện tại”.</p> : null}
             {sections.map((section) => (
-              <article className={`grid gap-4 border p-3 sm:grid-cols-[120px_minmax(0,1fr)_auto] ${section.isActive ? "border-[#d0d5dd]" : "border-[#e5e7eb] opacity-60"}`} key={section._id}>
-                <img className="aspect-[260/405] h-36 w-full bg-[#f2f4f7] object-cover" src={section.bannerImage} alt={section.title} />
+              <article className={`grid gap-4 overflow-hidden rounded-xl border p-3 sm:grid-cols-[120px_minmax(0,1fr)_auto] ${section.isActive ? "border-[#d0d5dd]" : "border-[#e5e7eb] opacity-60"}`} key={section._id}>
+                <img className="aspect-[260/405] h-36 w-full rounded-lg bg-[#f2f4f7] object-cover" src={section.bannerImage} alt={section.title} />
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 className="font-black text-[#344054]">{section.title}</h3>
@@ -282,56 +283,49 @@ export default function HomeSectionManager() {
                   <div className="mt-3 flex gap-2 overflow-x-auto">
                     {section.products.map((product) => (
                       <div className="w-20 shrink-0" key={product._id} title={product.name}>
-                        <img className="size-16 border border-[#e5e7eb] object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} />
+                        <img className="size-16 rounded-lg border border-[#e5e7eb] object-contain" src={product.images?.[0] || "/icons.svg"} alt={product.name} />
                         <p className="mt-1 truncate text-[10px] text-[#667085]">{product.name}</p>
                       </div>
                     ))}
                   </div>
                 </div>
                 <div className="flex items-start gap-1">
-                  <button className="grid size-9 place-items-center text-[#3278f6] hover:bg-[#eef4ff]" onClick={() => editSection(section)} title="Chỉnh sửa" type="button"><Pencil className="size-4" /></button>
-                  <button className="grid size-9 place-items-center text-[#475467] hover:bg-[#f2f4f7]" onClick={() => void toggleSection(section)} title={section.isActive ? "Ẩn" : "Hiện"} type="button">{section.isActive ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button>
-                  <button className="grid size-9 place-items-center text-[#dc2626] hover:bg-[#fef2f2]" onClick={() => void removeSection(section)} title="Xóa" type="button"><Trash2 className="size-4" /></button>
+                  <button className="grid size-9 place-items-center rounded-lg text-[#3278f6] hover:bg-[#eef4ff]" onClick={() => editSection(section)} title="Chỉnh sửa" type="button"><Pencil className="size-4" /></button>
+                  <button className="grid size-9 place-items-center rounded-lg text-[#475467] hover:bg-[#f2f4f7]" onClick={() => void toggleSection(section)} title={section.isActive ? "Ẩn" : "Hiện"} type="button">{section.isActive ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button>
+                  <button className="grid size-9 place-items-center rounded-lg text-[#dc2626] hover:bg-[#fef2f2]" onClick={() => void removeSection(section)} title="Xóa" type="button"><Trash2 className="size-4" /></button>
                 </div>
               </article>
             ))}
           </div>
 
-          <form className="border border-[#d0d5dd] bg-[#f9fafb] p-4 xl:sticky xl:top-28" id="home-section-form" onSubmit={submit}>
+          <form className="rounded-xl border border-[#d0d5dd] bg-[#f9fafb] p-4 xl:sticky xl:top-28" id="home-section-form" onSubmit={submit}>
             <h3 className="font-black text-[#344054]">{editingId ? "Chỉnh sửa khu vực" : "Thêm khu vực"}</h3>
             <div className="mt-4 space-y-3">
-              <input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Tiêu đề hiển thị" required value={form.title} />
-              <input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, keyword: event.target.value })} placeholder="Từ khóa khi bấm Xem tất cả" value={form.keyword} />
-              <select
-                className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm"
-                onChange={(event) => setForm({ ...form, category: event.target.value, products: [] })}
-                required
-                value={form.category}
-              >
-                {categories.map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}
-              </select>
+              <input className="h-11 w-full rounded-lg border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Tiêu đề hiển thị" required value={form.title} />
+              <input className="h-11 w-full rounded-lg border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, keyword: event.target.value })} placeholder="Từ khóa khi bấm Xem tất cả" value={form.keyword} />
+              <AdminSelect className="w-full" options={categories.map((category) => ({ value: category._id, label: category.name }))} onValueChange={(category) => setForm({ ...form, category, products: [] })} value={form.category} />
 
               <input accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(event) => void uploadBanner(event.target.files?.[0])} ref={fileInputRef} type="file" />
-              <button className="flex min-h-20 w-full flex-col items-center justify-center border border-dashed border-[#9cbcff] bg-[#f4f8ff] text-[#3278f6]" disabled={uploading} onClick={() => fileInputRef.current?.click()} type="button">
+              <button className="flex min-h-20 w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#9cbcff] bg-[#f4f8ff] text-[#3278f6]" disabled={uploading} onClick={() => fileInputRef.current?.click()} type="button">
                 {uploading ? <LoaderCircle className="size-5 animate-spin" /> : <Upload className="size-5" />}
                 <span className="mt-1 text-xs font-bold">{uploading ? "Đang tải..." : "Tải banner từ máy"}</span>
               </button>
-              <input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, bannerImage: event.target.value })} placeholder="Đường dẫn banner" required value={form.bannerImage} />
-              {form.bannerImage ? <img className="mx-auto h-52 max-w-full border border-[#d0d5dd] object-contain" src={form.bannerImage} alt="Xem trước banner" /> : null}
+              <input className="h-11 w-full rounded-lg border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setForm({ ...form, bannerImage: event.target.value })} placeholder="Đường dẫn banner" required value={form.bannerImage} />
+              {form.bannerImage ? <img className="mx-auto h-52 max-w-full rounded-xl border border-[#d0d5dd] object-contain" src={form.bannerImage} alt="Xem trước banner" /> : null}
 
-              <div className="border border-[#d0d5dd] bg-white">
+              <div className="overflow-hidden rounded-xl border border-[#d0d5dd] bg-white">
                 <div className="border-b border-[#e5e7eb] p-3">
                   <p className="text-sm font-bold text-[#344054]">Chọn sản phẩm ({form.products.length}/4)</p>
                   <label className="relative mt-2 block">
                     <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
-                    <input className="h-10 w-full border border-[#d0d5dd] pl-9 pr-3 text-sm" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sản phẩm..." value={search} />
+                    <input className="h-10 w-full rounded-lg border border-[#d0d5dd] pl-9 pr-3 text-sm" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sản phẩm..." value={search} />
                   </label>
                 </div>
                 <div className="max-h-64 divide-y divide-[#eef0f3] overflow-y-auto">
                   {categoryProducts.map((product) => (
                     <label className="flex cursor-pointer items-center gap-3 p-2 hover:bg-[#f8faff]" key={product._id}>
                       <input checked={form.products.includes(product._id)} className="size-4 accent-[#3278f6]" onChange={() => toggleProduct(product._id)} type="checkbox" />
-                      <img className="size-11 object-contain" src={product.images?.[0] || "/icons.svg"} alt="" />
+                      <img className="size-11 rounded-md object-contain" src={product.images?.[0] || "/icons.svg"} alt="" />
                       <span className="line-clamp-2 text-xs font-semibold text-[#475467]">{product.name}</span>
                     </label>
                   ))}
@@ -340,15 +334,15 @@ export default function HomeSectionManager() {
               </div>
 
               <div className="grid grid-cols-[100px_1fr] gap-3">
-                <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="0" onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} placeholder="Thứ tự" type="number" value={form.sortOrder} />
-                <label className="flex items-center gap-2 border border-[#d0d5dd] bg-white px-3 text-sm font-bold text-[#475467]">
+                <input className="h-11 rounded-lg border border-[#d0d5dd] bg-white px-3 text-sm" min="0" onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} placeholder="Thứ tự" type="number" value={form.sortOrder} />
+                <label className="flex items-center gap-2 rounded-lg border border-[#d0d5dd] bg-white px-3 text-sm font-bold text-[#475467]">
                   <input checked={form.isActive} className="size-4 accent-[#3278f6]" onChange={(event) => setForm({ ...form, isActive: event.target.checked })} type="checkbox" />
                   Hiển thị trên homepage
                 </label>
               </div>
               <div className="flex gap-2">
-                {editingId ? <Button className="flex-1 rounded-none" onClick={resetForm} type="button" variant="outline">Hủy sửa</Button> : null}
-                <Button className="flex-1 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" disabled={saving || uploading}>
+                {editingId ? <Button className="flex-1 rounded-lg" onClick={resetForm} type="button" variant="outline">Hủy sửa</Button> : null}
+                <Button className="flex-1 rounded-lg bg-[#3278f6] hover:bg-[#2860c5]" disabled={saving || uploading}>
                   {saving ? "Đang lưu..." : editingId ? "Cập nhật" : "Thêm khu vực"}
                 </Button>
               </div>

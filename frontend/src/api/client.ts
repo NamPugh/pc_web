@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, News, Order, OrderStats, Product, ProductType, Review, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, News, Order, OrderStats, Product, ProductType, Review, SiteSetting, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -40,6 +40,10 @@ export const catalogApi = {
   brands: () => api.get<ApiList<Brand>>("/brands"),
   banners: (params?: { position?: string; isActive?: boolean }) => api.get<ApiList<Banner>>("/banners", { params }),
   homeSections: (params?: { isActive?: boolean }) => api.get<ApiList<HomeSection>>("/home-sections", { params }),
+};
+
+export const siteSettingApi = {
+  get: () => api.get<ApiItem<SiteSetting>>("/site-settings"),
 };
 
 export const cartApi = {
@@ -144,6 +148,7 @@ export const adminApi = {
     sortOrder: number;
   }>) => api.put<ApiItem<HomeSection>>(`/home-sections/${id}`, payload),
   deleteHomeSection: (id: string) => api.delete(`/home-sections/${id}`),
+  updateSiteSetting: (payload: SiteSetting) => api.put<ApiItem<SiteSetting>>("/site-settings", payload),
   uploadBanner: (file: File) => {
     const formData = new FormData();
     formData.append("image", file);

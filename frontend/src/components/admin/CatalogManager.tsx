@@ -1,9 +1,10 @@
-import { Boxes, LoaderCircle, Layers3, Pencil, Plus, Search, Trash2, UsersRound, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Boxes, Check, LoaderCircle, Layers3, Pencil, Plus, Search, Trash2, UsersRound, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 
 import { adminApi, catalogApi, getErrorMessage } from "@/api/client";
+import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@/components/ui/button";
 import ProductExcelImporter from "@/components/admin/ProductExcelImporter";
 import type { Brand, Category, Product, ProductType } from "@/types";
@@ -81,6 +82,26 @@ export default function CatalogManager() {
   const [brandName, setBrandName] = useState("");
   const [brandLogo, setBrandLogo] = useState("");
   const [product, setProduct] = useState<ProductForm>(emptyProductForm());
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const specsRef = useRef<HTMLTextAreaElement>(null);
+  const imagesRef = useRef<HTMLTextAreaElement>(null);
+
+  const categoryOptions = useMemo(
+    () => categories.map((item) => ({ value: item._id, label: item.name })),
+    [categories],
+  );
+  const brandOptions = useMemo(
+    () => [{ value: "none", label: "Không có thương hiệu" }, ...brands.map((item) => ({ value: item._id, label: item.name }))],
+    [brands],
+  );
+  const productTypeOptions = useMemo(
+    () => productTypes.map((type) => ({ value: type, label: type.toUpperCase() })),
+    [],
+  );
+  const productStatusOptions = useMemo(
+    () => [{ value: "active", label: "Đang bán" }, { value: "inactive", label: "Ngừng bán" }, { value: "out_of_stock", label: "Hết hàng" }],
+    [],
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -145,10 +166,11 @@ export default function CatalogManager() {
   const createCategory = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      await adminApi.createCategory({ name: categoryName.trim(), image: categoryImage.trim() || undefined });
+      const { data } = await adminApi.createCategory({ name: categoryName.trim(), image: categoryImage.trim() || undefined });
+      setCategories((current) => [data.data, ...current]);
+      setProduct((current) => ({ ...current, category: current.category || data.data._id }));
       setCategoryName("");
       setCategoryImage("");
-      await loadData();
       toast.success("Đã tạo danh mục");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -158,10 +180,10 @@ export default function CatalogManager() {
   const createBrand = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     try {
-      await adminApi.createBrand({ name: brandName.trim(), logo: brandLogo.trim() || undefined });
+      const { data } = await adminApi.createBrand({ name: brandName.trim(), logo: brandLogo.trim() || undefined });
+      setBrands((current) => [data.data, ...current]);
       setBrandName("");
       setBrandLogo("");
-      await loadData();
       toast.success("Đã tạo thương hiệu");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -213,9 +235,12 @@ export default function CatalogManager() {
     setSavingProduct(true);
     const wasEditing = Boolean(editingId);
     try {
+      const descriptionValue = editingId ? descriptionRef.current?.value ?? product.description : product.description;
+      const specsValue = editingId ? specsRef.current?.value ?? product.specs : product.specs;
+      const imagesValue = editingId ? imagesRef.current?.value ?? product.images : product.images;
       let specs: Record<string, unknown> = {};
       try {
-        specs = product.specs.trim() ? JSON.parse(product.specs) as Record<string, unknown> : {};
+        specs = specsValue.trim() ? JSON.parse(specsValue) as Record<string, unknown> : {};
       } catch {
         toast.error("Thông số kỹ thuật phải là JSON hợp lệ");
         return;
@@ -230,7 +255,7 @@ export default function CatalogManager() {
         brand: product.brand || undefined,
         productType: product.productType,
         status: product.status,
-        description: product.description.trim(),
+        description: descriptionValue.trim(),
         specs,
         isFeatured: product.isFeatured,
         isDeal: product.isDeal,
@@ -242,15 +267,19 @@ export default function CatalogManager() {
         ratingAverage: Number(product.ratingAverage) || 0,
         ratingCount: Number(product.ratingCount) || 0,
         sold: Number(product.sold) || 0,
-        images: product.images
+        images: imagesValue
           .split(/[|;\n]+/)
           .map((image) => image.trim())
           .filter(Boolean),
       };
-      if (editingId) await adminApi.updateProduct(editingId, payload);
-      else await adminApi.createProduct(payload);
+      if (editingId) {
+        const { data } = await adminApi.updateProduct(editingId, payload);
+        setProducts((current) => current.map((item) => item._id === editingId ? data.data : item));
+      } else {
+        const { data } = await adminApi.createProduct(payload);
+        setProducts((current) => [data.data, ...current]);
+      }
       resetProductForm();
-      await loadData();
       toast.success(wasEditing ? "Đã cập nhật sản phẩm" : "Đã tạo sản phẩm");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -263,7 +292,7 @@ export default function CatalogManager() {
     if (!window.confirm(`Xóa sản phẩm "${item.name}"?`)) return;
     try {
       await adminApi.deleteProduct(item._id);
-      await loadData();
+      setProducts((current) => current.filter((productItem) => productItem._id !== item._id));
       toast.success("Đã xóa sản phẩm");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -284,7 +313,7 @@ export default function CatalogManager() {
     try {
       const { data } = await adminApi.deleteAllProducts();
       resetProductForm();
-      await loadData();
+      setProducts([]);
       toast.success(data.message);
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -346,21 +375,10 @@ export default function CatalogManager() {
             <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="0" placeholder="Giá bán" required type="number" value={product.price} onChange={(event) => setProduct({ ...product, price: event.target.value })} />
             <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="0" placeholder="Giá cũ (tùy chọn)" type="number" value={product.oldPrice} onChange={(event) => setProduct({ ...product, oldPrice: event.target.value })} />
             <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="0" placeholder="Tồn kho" type="number" value={product.stock} onChange={(event) => setProduct({ ...product, stock: event.target.value })} />
-            <select className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" required value={product.category} onChange={(event) => setProduct({ ...product, category: event.target.value })}>
-              {categories.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
-            </select>
-            <select className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" value={product.brand} onChange={(event) => setProduct({ ...product, brand: event.target.value })}>
-              <option value="">Không có thương hiệu</option>
-              {brands.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}
-            </select>
-            <select className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" value={product.productType} onChange={(event) => setProduct({ ...product, productType: event.target.value as ProductType })}>
-              {productTypes.map((type) => <option key={type} value={type}>{type.toUpperCase()}</option>)}
-            </select>
-            <select className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" value={product.status} onChange={(event) => setProduct({ ...product, status: event.target.value as ProductForm["status"] })}>
-              <option value="active">Đang bán</option>
-              <option value="inactive">Ngừng bán</option>
-              <option value="out_of_stock">Hết hàng</option>
-            </select>
+            <AdminSelect options={categoryOptions} onValueChange={(category) => setProduct({ ...product, category })} value={product.category} />
+            <AdminSelect options={brandOptions} onValueChange={(brand) => setProduct({ ...product, brand: brand === "none" ? "" : brand })} value={product.brand || "none"} />
+            <AdminSelect options={productTypeOptions} onValueChange={(productType) => setProduct({ ...product, productType: productType as ProductType })} value={product.productType} />
+            <AdminSelect options={productStatusOptions} onValueChange={(status) => setProduct({ ...product, status: status as ProductForm["status"] })} value={product.status} />
             <textarea className="min-h-24 border border-[#d0d5dd] bg-white p-3 text-sm md:col-span-2 xl:col-span-4" onChange={(event) => setProduct({ ...product, description: event.target.value })} placeholder="Mô tả chi tiết sản phẩm" value={product.description} />
             <textarea
               className="min-h-24 border border-[#d0d5dd] bg-white p-3 text-sm md:col-span-2 xl:col-span-4"
@@ -388,31 +406,36 @@ export default function CatalogManager() {
         ) : null}
 
         {editingId ? (
-          <div className="fixed inset-0 z-[100] grid place-items-center bg-[#101828]/65 p-3 backdrop-blur-[2px]" onMouseDown={resetProductForm}>
-            <form className="max-h-[94vh] w-full max-w-6xl overflow-y-auto bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()} onSubmit={saveProduct}>
-              <header className="sticky top-0 z-20 flex items-center justify-between border-b border-[#e5e7eb] bg-white px-5 py-4">
+          <div className="fixed inset-0 z-[100] grid place-items-center bg-[#101828]/65 p-3" onMouseDown={resetProductForm}>
+            <form className="flex max-h-[94vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border border-[#eaecf0] bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()} onSubmit={saveProduct}>
+              <header className="z-20 flex shrink-0 items-center justify-between border-b border-[#e5e7eb] bg-white px-5 py-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-[#3278f6]">Chỉnh sửa sản phẩm</p>
-                  <h2 className="mt-1 text-xl font-black text-[#1d2939]">{product.name}</h2>
+                  <h2 className="text-xl font-black text-[#1d2939]">{product.name}</h2>
                 </div>
                 <button className="grid size-10 place-items-center text-[#667085] hover:bg-[#f2f4f7]" disabled={savingProduct} onClick={resetProductForm} type="button"><X className="size-5" /></button>
               </header>
 
-              <div className="space-y-5 p-5">
-                <section className="border border-[#e5e7eb] p-4">
+              <div className="min-h-0 flex-1 space-y-5 overflow-y-auto p-5 [scrollbar-gutter:stable]">
+                <section className="rounded-xl border border-[#e5e7eb] p-4">
                   <h3 className="mb-4 font-black text-[#344054]">Thông tin cơ bản</h3>
                   <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
                     <label className="md:col-span-2"><span className="mb-1 block text-xs font-bold text-[#667085]">Tên sản phẩm</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm" onChange={(event) => setProduct({ ...product, name: event.target.value })} required value={product.name} /></label>
                     <label><span className="mb-1 block text-xs font-bold text-[#667085]">SKU</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm" onChange={(event) => setProduct({ ...product, sku: event.target.value })} value={product.sku} /></label>
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Loại sản phẩm</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, productType: event.target.value as ProductType })} value={product.productType}>{productTypes.map((type) => <option key={type} value={type}>{type.toUpperCase()}</option>)}</select></label>
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Danh mục</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, category: event.target.value })} required value={product.category}>{categories.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select></label>
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Thương hiệu</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, brand: event.target.value })} value={product.brand}><option value="">Không có thương hiệu</option>{brands.map((item) => <option key={item._id} value={item._id}>{item.name}</option>)}</select></label>
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Trạng thái</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, status: event.target.value as ProductForm["status"] })} value={product.status}><option value="active">Đang bán</option><option value="inactive">Ngừng bán</option><option value="out_of_stock">Hết hàng</option></select></label>
-                    <label className="flex items-end"><span className="flex h-11 w-full items-center gap-2 border border-[#d0d5dd] px-3 text-sm font-bold text-[#475467]"><input checked={product.isFeatured} className="size-4 accent-[#3278f6]" onChange={(event) => setProduct({ ...product, isFeatured: event.target.checked })} type="checkbox" />Sản phẩm nổi bật</span></label>
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Loại sản phẩm</span><AdminSelect className="w-full" options={productTypeOptions} onValueChange={(productType) => setProduct({ ...product, productType: productType as ProductType })} value={product.productType} /></label>
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Danh mục</span><AdminSelect className="w-full" options={categoryOptions} onValueChange={(category) => setProduct({ ...product, category })} value={product.category} /></label>
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Thương hiệu</span><AdminSelect className="w-full" options={brandOptions} onValueChange={(brand) => setProduct({ ...product, brand: brand === "none" ? "" : brand })} value={product.brand || "none"} /></label>
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Trạng thái</span><AdminSelect className="w-full" options={productStatusOptions} onValueChange={(status) => setProduct({ ...product, status: status as ProductForm["status"] })} value={product.status} /></label>
+                    <label className="flex items-end">
+                      <span className={`flex h-11 w-full cursor-pointer items-center gap-3 rounded-lg border px-3 text-sm font-bold transition ${product.isFeatured ? "border-[#465fff] bg-[#ecf3ff] text-[#465fff]" : "border-[#d0d5dd] bg-white text-[#475467] hover:border-[#b8c4ff]"}`}>
+                        <input checked={product.isFeatured} className="peer sr-only" onChange={(event) => setProduct({ ...product, isFeatured: event.target.checked })} type="checkbox" />
+                        <span className={`grid size-5 shrink-0 place-items-center rounded-md border transition ${product.isFeatured ? "border-[#465fff] bg-[#465fff] text-white" : "border-[#98a2b3] bg-white text-transparent"}`}><Check className="size-3.5" strokeWidth={3} /></span>
+                        Sản phẩm nổi bật
+                      </span>
+                    </label>
                   </div>
                 </section>
 
-                <section className="border border-[#e5e7eb] p-4">
+                <section className="rounded-xl border border-[#e5e7eb] p-4">
                   <h3 className="mb-4 font-black text-[#344054]">Giá, kho và thống kê</h3>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                     <label><span className="mb-1 block text-xs font-bold text-[#667085]">Giá bán</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm" min="0" onChange={(event) => setProduct({ ...product, price: event.target.value })} required type="number" value={product.price} /></label>
@@ -424,31 +447,34 @@ export default function CatalogManager() {
                   </div>
                 </section>
 
-                <section className="border border-[#e5e7eb] p-4">
+                <section className="rounded-xl border border-[#e5e7eb] p-4">
                   <h3 className="mb-4 font-black text-[#344054]">Nội dung và hình ảnh</h3>
                   <div className="grid gap-4 lg:grid-cols-2">
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Mô tả sản phẩm</span><textarea className="min-h-48 w-full border border-[#d0d5dd] p-3 text-sm" onChange={(event) => setProduct({ ...product, description: event.target.value })} value={product.description} /></label>
-                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Thông số kỹ thuật (JSON)</span><textarea className="min-h-48 w-full border border-[#d0d5dd] p-3 font-mono text-xs" onChange={(event) => setProduct({ ...product, specs: event.target.value })} value={product.specs} /></label>
-                    <label className="lg:col-span-2"><span className="mb-1 block text-xs font-bold text-[#667085]">Danh sách URL ảnh — mỗi ảnh một dòng</span><textarea className="min-h-28 w-full border border-[#d0d5dd] p-3 text-sm" onChange={(event) => setProduct({ ...product, images: event.target.value })} value={product.images} /></label>
-                    {product.images.trim() ? <div className="flex gap-2 overflow-x-auto lg:col-span-2">{product.images.split(/[|;\n]+/).map((image) => image.trim()).filter(Boolean).slice(0, 10).map((image, index) => <img className="size-24 shrink-0 border border-[#d0d5dd] object-contain" key={`${image}-${index}`} src={image} alt={`Ảnh ${index + 1}`} />)}</div> : null}
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Mô tả sản phẩm</span><textarea className="min-h-48 w-full border border-[#d0d5dd] p-3 text-sm" defaultValue={product.description} ref={descriptionRef} /></label>
+                    <label><span className="mb-1 block text-xs font-bold text-[#667085]">Thông số kỹ thuật (JSON)</span><textarea className="min-h-48 w-full border border-[#d0d5dd] p-3 font-mono text-xs" defaultValue={product.specs} ref={specsRef} /></label>
+                    <label className="lg:col-span-2"><span className="mb-1 block text-xs font-bold text-[#667085]">Danh sách URL ảnh — mỗi ảnh một dòng</span><textarea className="min-h-28 w-full border border-[#d0d5dd] p-3 text-sm" defaultValue={product.images} ref={imagesRef} /></label>
                   </div>
                 </section>
 
-                <section className="border border-[#fed7aa] bg-[#fffaf5] p-4">
-                  <label className="flex items-center gap-2 font-black text-[#9a3412]"><input checked={product.isDeal} className="size-4 accent-[#ea580c]" onChange={(event) => setProduct({ ...product, isDeal: event.target.checked })} type="checkbox" />Cấu hình Deal trực tiếp trên sản phẩm</label>
+                <section className="rounded-xl border border-[#fed7aa] bg-[#fffaf5] p-4">
+                  <label className="inline-flex cursor-pointer items-center gap-3 font-black text-[#9a3412]">
+                    <input checked={product.isDeal} className="sr-only" onChange={(event) => setProduct({ ...product, isDeal: event.target.checked })} type="checkbox" />
+                    <span className={`grid size-5 shrink-0 place-items-center rounded-md border transition ${product.isDeal ? "border-[#ea580c] bg-[#ea580c] text-white" : "border-[#fdba74] bg-white text-transparent"}`}><Check className="size-3.5" strokeWidth={3} /></span>
+                    Cấu hình Deal trực tiếp trên sản phẩm
+                  </label>
                   {product.isDeal ? <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><label><span className="mb-1 block text-xs font-bold text-[#9a3412]">Giá deal</span><input className="h-11 w-full border border-[#fdba74] bg-white px-3 text-sm" min="0" onChange={(event) => setProduct({ ...product, dealPrice: event.target.value })} type="number" value={product.dealPrice} /></label><label><span className="mb-1 block text-xs font-bold text-[#9a3412]">Số lượng deal</span><input className="h-11 w-full border border-[#fdba74] bg-white px-3 text-sm" min="0" onChange={(event) => setProduct({ ...product, dealQuantity: event.target.value })} type="number" value={product.dealQuantity} /></label><label><span className="mb-1 block text-xs font-bold text-[#9a3412]">Đã bán deal</span><input className="h-11 w-full border border-[#fdba74] bg-white px-3 text-sm" min="0" onChange={(event) => setProduct({ ...product, dealSold: event.target.value })} type="number" value={product.dealSold} /></label><span /><label><span className="mb-1 block text-xs font-bold text-[#9a3412]">Bắt đầu</span><input className="h-11 w-full border border-[#fdba74] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, dealStartAt: event.target.value })} type="datetime-local" value={product.dealStartAt} /></label><label><span className="mb-1 block text-xs font-bold text-[#9a3412]">Kết thúc</span><input className="h-11 w-full border border-[#fdba74] bg-white px-3 text-sm" onChange={(event) => setProduct({ ...product, dealEndAt: event.target.value })} type="datetime-local" value={product.dealEndAt} /></label></div> : null}
                 </section>
               </div>
 
-              <footer className="sticky bottom-0 flex justify-end gap-2 border-t border-[#e5e7eb] bg-white px-5 py-4">
-                <Button className="rounded-none" disabled={savingProduct} onClick={resetProductForm} type="button" variant="outline">Hủy</Button>
-                <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" disabled={savingProduct}>{savingProduct ? <LoaderCircle className="size-4 animate-spin" /> : null}Lưu thay đổi</Button>
+              <footer className="flex shrink-0 justify-end gap-2 border-t border-[#e5e7eb] bg-white px-5 py-4">
+                <Button className="rounded-lg" disabled={savingProduct} onClick={resetProductForm} type="button" variant="outline">Hủy</Button>
+                <Button className="rounded-lg bg-[#465fff] hover:bg-[#3641f5]" disabled={savingProduct}>{savingProduct ? <LoaderCircle className="size-4 animate-spin" /> : null}Lưu thay đổi</Button>
               </footer>
             </form>
           </div>
         ) : null}
 
-        <div className="overflow-x-auto">
+        {!editingId ? <div className="overflow-x-auto">
           <div className="min-w-[1050px]">
             <div className="grid grid-cols-[minmax(280px,1fr)_150px_130px_130px_130px_100px] bg-[#f9fafb] px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-[#667085]">
               <span>Sản phẩm</span><span>Danh mục</span><span>Giá bán</span><span>Trạng thái</span><span>Tồn kho</span><span />
@@ -463,7 +489,7 @@ export default function CatalogManager() {
                   <span className="truncate font-semibold text-[#667085]">{item.category?.name || "—"}</span>
                   <strong className="text-[#1d2939]">{currency.format(item.price)}</strong>
                   <span className={`w-fit px-2.5 py-1 text-xs font-bold ${item.status === "active" ? "bg-[#ecfdf3] text-[#15803d]" : item.status === "inactive" ? "bg-[#f2f4f7] text-[#667085]" : "bg-[#fef2f2] text-[#dc2626]"}`}>{item.status === "active" ? "Đang bán" : item.status === "inactive" ? "Ngừng bán" : "Hết hàng"}</span>
-                  <div><strong className={`text-base ${item.stock <= 5 ? "text-[#dc2626]" : "text-[#344054]"}`}>{item.stock}</strong><p className="text-[11px] text-[#98a2b3]">{item.stock > 0 ? "Còn trong kho" : "Không còn hàng"}</p></div>
+                  <strong className={`text-base ${item.stock <= 5 ? "text-[#dc2626]" : "text-[#344054]"}`}>{item.stock}</strong>
                   <div className="flex justify-end gap-1">
                     <button className="grid size-9 place-items-center text-[#3278f6] hover:bg-[#eef4ff]" onClick={() => editProduct(item)} title="Sửa sản phẩm" type="button"><Pencil className="size-4" /></button>
                     <button className="grid size-9 place-items-center text-[#98a2b3] hover:bg-[#fef2f2] hover:text-[#dc2626]" onClick={() => void deleteProduct(item)} title="Xóa sản phẩm" type="button"><Trash2 className="size-4" /></button>
@@ -472,7 +498,7 @@ export default function CatalogManager() {
               ))}
             </div>
           </div>
-        </div>
+        </div> : null}
       </section>
 
       <div className="grid gap-5 lg:grid-cols-2">

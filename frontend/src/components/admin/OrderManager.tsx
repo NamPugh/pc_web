@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronRight, PackageOpen, RefreshCw, Search, X } from "lucide-react";
+import { ChevronRight, PackageOpen, RefreshCw, Search, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { adminApi, getErrorMessage } from "@/api/client";
+import AdminSelect from "@/components/admin/AdminSelect";
 import type { Order } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", {
@@ -20,11 +21,11 @@ const orderStatuses: Array<{ value: Order["orderStatus"]; label: string }> = [
 ];
 
 const statusStyle: Record<Order["orderStatus"], string> = {
-  pending: "bg-[#fff7ed] text-[#c2410c]",
-  confirmed: "bg-[#eff6ff] text-[#1d4ed8]",
-  shipping: "bg-[#f5f3ff] text-[#6d28d9]",
-  completed: "bg-[#f0fdf4] text-[#15803d]",
-  cancelled: "bg-[#fef2f2] text-[#b91c1c]",
+  pending: "!border-[#fed7aa] !bg-[#fff7ed] !text-[#c2410c]",
+  confirmed: "!border-[#bfdbfe] !bg-[#eff6ff] !text-[#1d4ed8]",
+  shipping: "!border-[#ddd6fe] !bg-[#f5f3ff] !text-[#6d28d9]",
+  completed: "!border-[#bbf7d0] !bg-[#f0fdf4] !text-[#15803d]",
+  cancelled: "!border-[#fecaca] !bg-[#fef2f2] !text-[#b91c1c]",
 };
 
 type Props = {
@@ -32,9 +33,10 @@ type Props = {
   loading: boolean;
   initialStatus?: Order["orderStatus"] | "all";
   onReload: () => Promise<void>;
+  onOrderUpdated: (order: Order) => void;
 };
 
-export default function OrderManager({ orders, loading, initialStatus = "all", onReload }: Props) {
+export default function OrderManager({ orders, loading, initialStatus = "all", onReload, onOrderUpdated }: Props) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<Order["orderStatus"] | "all">(initialStatus);
   const [payment, setPayment] = useState<Order["paymentStatus"] | "all">("all");
@@ -64,7 +66,7 @@ export default function OrderManager({ orders, loading, initialStatus = "all", o
     try {
       const { data } = await adminApi.updateOrder(order._id, payload);
       if (selectedOrder?._id === order._id) setSelectedOrder(data.data);
-      await onReload();
+      onOrderUpdated(data.data);
       toast.success("Đã cập nhật đơn hàng");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -79,7 +81,6 @@ export default function OrderManager({ orders, loading, initialStatus = "all", o
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-[#1d2939]">Quản lý đơn hàng</h2>
-            <p className="mt-1 text-sm text-[#8d94ac]">Theo dõi, xác nhận thanh toán và cập nhật tiến độ giao hàng.</p>
           </div>
           <button
             className="inline-flex h-10 items-center gap-2 border border-[#d0d5dd] px-3 text-sm font-bold text-[#344054] transition hover:bg-[#f9fafb]"
@@ -101,15 +102,8 @@ export default function OrderManager({ orders, loading, initialStatus = "all", o
               value={search}
             />
           </label>
-          <select className="h-11 border border-[#d0d5dd] px-3 text-sm font-semibold text-[#344054] outline-none focus:border-[#3278f6]" onChange={(event) => setStatus(event.target.value as typeof status)} value={status}>
-            <option value="all">Tất cả trạng thái</option>
-            {orderStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-          </select>
-          <select className="h-11 border border-[#d0d5dd] px-3 text-sm font-semibold text-[#344054] outline-none focus:border-[#3278f6]" onChange={(event) => setPayment(event.target.value as typeof payment)} value={payment}>
-            <option value="all">Mọi thanh toán</option>
-            <option value="unpaid">Chưa thanh toán</option>
-            <option value="paid">Đã thanh toán</option>
-          </select>
+          <AdminSelect options={[{ value: "all", label: "Tất cả trạng thái" }, ...orderStatuses]} onValueChange={(value) => setStatus(value as typeof status)} value={status} />
+          <AdminSelect options={[{ value: "all", label: "Mọi thanh toán" }, { value: "unpaid", label: "Chưa thanh toán" }, { value: "paid", label: "Đã thanh toán" }]} onValueChange={(value) => setPayment(value as typeof payment)} value={payment} />
         </div>
       </div>
 
@@ -157,17 +151,7 @@ export default function OrderManager({ orders, loading, initialStatus = "all", o
                       {order.paymentStatus === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
                     </button>
                   </div>
-                  <label className="relative">
-                    <select
-                      className={`h-9 w-full appearance-none rounded-full border-0 px-3 pr-8 text-xs font-bold outline-none ${statusStyle[order.orderStatus]}`}
-                      disabled={updatingId === order._id}
-                      onChange={(event) => void updateOrder(order, { orderStatus: event.target.value as Order["orderStatus"] })}
-                      value={order.orderStatus}
-                    >
-                      {orderStatuses.map((item) => <option className="bg-white text-[#344054]" key={item.value} value={item.value}>{item.label}</option>)}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2" />
-                  </label>
+                  <AdminSelect className={`h-9 w-full !rounded-lg border text-xs shadow-none ${statusStyle[order.orderStatus]}`} disabled={updatingId === order._id} options={orderStatuses} onValueChange={(value) => void updateOrder(order, { orderStatus: value as Order["orderStatus"] })} value={order.orderStatus} />
                   <button className="grid size-9 place-items-center text-[#667085] transition hover:bg-[#eef4ff] hover:text-[#3278f6]" onClick={() => setSelectedOrder(order)} title="Xem chi tiết" type="button">
                     <ChevronRight className="size-5" />
                   </button>
@@ -197,16 +181,11 @@ export default function OrderManager({ orders, loading, initialStatus = "all", o
               <div className="grid grid-cols-2 gap-3">
                 <label>
                   <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#667085]">Trạng thái</span>
-                  <select className="h-11 w-full border border-[#d0d5dd] px-3 text-sm font-bold" onChange={(event) => void updateOrder(selectedOrder, { orderStatus: event.target.value as Order["orderStatus"] })} value={selectedOrder.orderStatus}>
-                    {orderStatuses.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                  </select>
+                  <AdminSelect className="w-full" options={orderStatuses} onValueChange={(value) => void updateOrder(selectedOrder, { orderStatus: value as Order["orderStatus"] })} value={selectedOrder.orderStatus} />
                 </label>
                 <label>
                   <span className="mb-1.5 block text-xs font-bold uppercase tracking-wide text-[#667085]">Thanh toán</span>
-                  <select className="h-11 w-full border border-[#d0d5dd] px-3 text-sm font-bold" onChange={(event) => void updateOrder(selectedOrder, { paymentStatus: event.target.value as Order["paymentStatus"] })} value={selectedOrder.paymentStatus}>
-                    <option value="unpaid">Chưa thanh toán</option>
-                    <option value="paid">Đã thanh toán</option>
-                  </select>
+                  <AdminSelect className="w-full" options={[{ value: "unpaid", label: "Chưa thanh toán" }, { value: "paid", label: "Đã thanh toán" }]} onValueChange={(value) => void updateOrder(selectedOrder, { paymentStatus: value as Order["paymentStatus"] })} value={selectedOrder.paymentStatus} />
                 </label>
               </div>
 

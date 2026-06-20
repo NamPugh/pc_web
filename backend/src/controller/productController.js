@@ -26,6 +26,8 @@ export const createProduct = async (req, res) => {
         data.discount = oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
 
         const product = await Product.create(data);
+        await product.populate("category", "name slug");
+        await product.populate("brand", "name slug logo");
 
         res.status(201).json({
             success: true,
@@ -63,8 +65,8 @@ export const buildProductFilter = (query) => {
             const searchPattern = {$regex: safeKeyword, $options: "i"};
             filter.$or = [
                 {name: searchPattern},
-                {sku: searchPattern},
-                {description: searchPattern}
+                //{sku: searchPattern},
+                //{description: searchPattern}
             ];
         }
     }
@@ -244,6 +246,8 @@ export const updateProduct = async (req, res) => {
                 message: "Không tìm thấy sản phẩm"
             });
         }
+        await product.populate("category", "name slug");
+        await product.populate("brand", "name slug logo");
 
         res.json({
             success: true, 

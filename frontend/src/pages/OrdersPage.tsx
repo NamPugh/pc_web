@@ -111,9 +111,7 @@ export default function OrdersPage() {
     <section className="space-y-5 py-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-[#3278f6]">Lịch sử mua hàng</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-[#29324e]">Đơn hàng của tôi</h1>
-          <p className="mt-2 text-sm text-[#667085]">Theo dõi quá trình xử lý, giao nhận và thanh toán đơn hàng.</p>
+          <h1 className="text-3xl font-black tracking-tight text-[#29324e]">Đơn hàng của tôi</h1>
         </div>
         <Link className="inline-flex items-center gap-2 text-sm font-bold text-[#3278f6] hover:text-[#2860c5]" to="/">
           <ArrowLeft className="size-4" /> Tiếp tục mua hàng

@@ -4,6 +4,8 @@ import type { FormEvent } from "react";
 import { toast } from "sonner";
 
 import { catalogApi, flashSaleApi, getErrorMessage } from "@/api/client";
+import AdminDateTimePicker from "@/components/admin/AdminDateTimePicker";
+import AdminSelect from "@/components/admin/AdminSelect";
 import { Button } from "@/components/ui/button";
 import type { FlashSale, FlashSaleItem, Product } from "@/types";
 
@@ -228,29 +230,27 @@ export default function DealManager() {
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-start justify-between gap-4 border border-[#e5e7eb] bg-white p-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#e5e7eb] bg-white p-5">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#ea580c]">Khuyến mãi theo đợt</p>
-          <h2 className="mt-1 text-2xl font-black text-[#1d2939]">Quản lý Deal giờ vàng</h2>
-          <p className="mt-1 text-sm text-[#8d94ac]">Tạo thời gian cho đợt trước, sau đó quản lý sản phẩm bên trong.</p>
+          <h2 className="text-2xl font-black text-[#1d2939]">Quản lý Deal giờ vàng</h2>
         </div>
-        <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={openCreateSale}>
+        <Button className="rounded-lg bg-[#3278f6] hover:bg-[#2860c5]" onClick={openCreateSale}>
           <Plus className="size-4" /> Tạo đợt giảm giá
         </Button>
       </div>
 
       {showSaleForm ? (
-        <form className="grid gap-4 border border-[#cbdcff] bg-[#f8faff] p-5 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_180px_auto]" onSubmit={submitSale}>
+        <form className="grid gap-4 rounded-2xl border border-[#cbdcff] bg-[#f8faff] p-5 md:grid-cols-2 xl:grid-cols-[1.2fr_1fr_1fr_180px_auto]" onSubmit={submitSale}>
           <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Tên đợt</span><input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setSaleForm({ ...saleForm, name: event.target.value })} placeholder="Ví dụ: Deal cuối tuần" required value={saleForm.name} /></label>
-          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Bắt đầu</span><input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setSaleForm({ ...saleForm, startAt: event.target.value })} required type="datetime-local" value={saleForm.startAt} /></label>
-          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Kết thúc</span><input className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setSaleForm({ ...saleForm, endAt: event.target.value })} required type="datetime-local" value={saleForm.endAt} /></label>
-          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Trạng thái</span><select className="h-11 w-full border border-[#d0d5dd] bg-white px-3 text-sm" onChange={(event) => setSaleForm({ ...saleForm, status: event.target.value as FlashSale["status"] })} value={saleForm.status}><option value="draft">Bản nháp</option><option value="active">Kích hoạt</option><option value="inactive">Tạm dừng</option></select></label>
-          <div className="flex items-end gap-2"><Button className="h-11 rounded-none bg-[#3278f6] hover:bg-[#2860c5]">{editingSaleId ? "Lưu thay đổi" : "Tạo đợt"}</Button><Button className="h-11 rounded-none" onClick={resetSaleForm} type="button" variant="outline"><X className="size-4" /></Button></div>
+          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Bắt đầu</span><AdminDateTimePicker onChange={(startAt) => setSaleForm({ ...saleForm, startAt })} placeholder="Chọn thời gian bắt đầu" value={saleForm.startAt} /></label>
+          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Kết thúc</span><AdminDateTimePicker onChange={(endAt) => setSaleForm({ ...saleForm, endAt })} placeholder="Chọn thời gian kết thúc" value={saleForm.endAt} /></label>
+          <label><span className="mb-1.5 block text-sm font-bold text-[#344054]">Trạng thái</span><AdminSelect className="w-full" options={[{ value: "draft", label: "Bản nháp" }, { value: "active", label: "Kích hoạt" }, { value: "inactive", label: "Tạm dừng" }]} onValueChange={(status) => setSaleForm({ ...saleForm, status: status as FlashSale["status"] })} value={saleForm.status} /></label>
+          <div className="flex items-end gap-2"><Button className="h-11 rounded-lg bg-[#3278f6] hover:bg-[#2860c5]">{editingSaleId ? "Lưu thay đổi" : "Tạo đợt"}</Button><Button className="h-11 rounded-lg" onClick={resetSaleForm} type="button" variant="outline"><X className="size-4" /></Button></div>
         </form>
       ) : null}
 
       <div className="grid items-start gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-        <aside className="border border-[#e5e7eb] bg-white">
+        <aside className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
           <div className="border-b border-[#e5e7eb] p-4">
             <h3 className="font-bold text-[#1d2939]">Các đợt giảm giá</h3>
             <p className="mt-1 text-xs text-[#8d94ac]">{sales.length} đợt đã tạo</p>
@@ -272,20 +272,18 @@ export default function DealManager() {
 
         {selectedSale ? (
           <div className="space-y-5">
-            <section className="border border-[#e5e7eb] bg-white">
+            <section className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white">
               <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e7eb] p-5">
                 <div className="flex items-center gap-3"><span className="grid size-11 place-items-center rounded-lg bg-[#fff7ed] text-[#ea580c]"><CalendarClock className="size-5" /></span><div><h3 className="text-xl font-bold text-[#1d2939]">{selectedSale.name}</h3><p className="text-sm text-[#8d94ac]">{new Date(selectedSale.startAt).toLocaleString("vi-VN")} — {new Date(selectedSale.endAt).toLocaleString("vi-VN")}</p></div></div>
-                <div className="flex gap-2"><Button className="rounded-none" onClick={() => openEditSale(selectedSale)} type="button" variant="outline"><Pencil className="size-4" /> Sửa đợt</Button><Button className="rounded-none text-[#dc2626]" onClick={() => void removeSale(selectedSale)} type="button" variant="outline"><Trash2 className="size-4" /></Button></div>
+                <div className="flex gap-2"><Button className="rounded-lg" onClick={() => openEditSale(selectedSale)} type="button" variant="outline"><Pencil className="size-4" /> Sửa đợt</Button><Button className="rounded-lg text-[#dc2626]" onClick={() => void removeSale(selectedSale)} type="button" variant="outline"><Trash2 className="size-4" /></Button></div>
               </div>
 
               <form className="grid gap-3 border-b border-[#e5e7eb] bg-[#f9fafb] p-5 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_160px_130px_auto]" onSubmit={submitItem}>
                 <label className="relative md:col-span-2 xl:col-span-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-9 pr-3 text-sm" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sản phẩm..." value={search} /></label>
-                <select className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm xl:col-start-1" disabled={Boolean(editingItemId)} onChange={(event) => setItemForm({ ...itemForm, productId: event.target.value })} required value={itemForm.productId}>
-                  {editingItemId ? selectedSale.items.filter((item) => item._id === editingItemId).map((item) => <option key={item.product._id} value={item.product._id}>{item.product.name}</option>) : availableProducts.map((product) => <option key={product._id} value={product._id}>{product.name}</option>)}
-                </select>
+                <AdminSelect className="xl:col-start-1" disabled={Boolean(editingItemId)} options={(editingItemId ? selectedSale.items.filter((item) => item._id === editingItemId).map((item) => item.product) : availableProducts).map((product) => ({ value: product._id, label: product.name }))} onValueChange={(productId) => setItemForm({ ...itemForm, productId })} value={itemForm.productId} />
                 <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="1" onChange={(event) => setItemForm({ ...itemForm, dealPrice: event.target.value })} placeholder="Giá ưu đãi" required type="number" value={itemForm.dealPrice} />
                 <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="1" onChange={(event) => setItemForm({ ...itemForm, quantity: event.target.value })} placeholder="Số suất" required type="number" value={itemForm.quantity} />
-                <div className="flex gap-2"><Button className="h-11 flex-1 rounded-none bg-[#3278f6] hover:bg-[#2860c5]">{editingItemId ? "Cập nhật" : "Thêm sản phẩm"}</Button>{editingItemId ? <Button className="h-11 rounded-none" onClick={resetItemForm} type="button" variant="outline"><X className="size-4" /></Button> : null}</div>
+                <div className="flex gap-2"><Button className="h-11 flex-1 rounded-lg bg-[#3278f6] hover:bg-[#2860c5]">{editingItemId ? "Cập nhật" : "Thêm sản phẩm"}</Button>{editingItemId ? <Button className="h-11 rounded-lg" onClick={resetItemForm} type="button" variant="outline"><X className="size-4" /></Button> : null}</div>
               </form>
 
               <div className="overflow-x-auto">
@@ -307,7 +305,7 @@ export default function DealManager() {
             </section>
           </div>
         ) : (
-          <div className="grid min-h-80 place-items-center border border-dashed border-[#d0d5dd] bg-white text-center"><div><CalendarClock className="mx-auto size-10 text-[#98a2b3]" /><p className="mt-3 font-bold text-[#475467]">Hãy tạo hoặc chọn một đợt giảm giá</p></div></div>
+          <div className="grid min-h-80 place-items-center rounded-2xl border border-dashed border-[#d0d5dd] bg-white text-center"><div><CalendarClock className="mx-auto size-10 text-[#98a2b3]" /><p className="mt-3 font-bold text-[#475467]">Hãy tạo hoặc chọn một đợt giảm giá</p></div></div>
         )}
       </div>
     </div>

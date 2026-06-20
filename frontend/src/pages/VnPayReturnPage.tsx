@@ -1,4 +1,4 @@
-import { ArrowRight, Check, CheckCircle2, LoaderCircle, ReceiptText, ShoppingBag, Sparkles, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, CreditCard, LoaderCircle, ReceiptText, RefreshCw, ShoppingBag, Sparkles, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -61,9 +61,66 @@ export default function VnPayReturnPage() {
     return <section className="grid min-h-[55vh] place-items-center py-8"><div className="text-center"><LoaderCircle className="mx-auto size-10 animate-spin text-[#3278f6]" /><p className="mt-4 font-bold text-[#475467]">Đang xác minh giao dịch VNPay...</p></div></section>;
   }
 
-  const Icon = result.success ? CheckCircle2 : XCircle;
   const transactionNo = searchParams.get("vnp_TransactionNo");
   const amount = Number(searchParams.get("vnp_Amount") || 0) / 100;
+
+  if (!result.success) {
+    return (
+      <section className="grid min-h-[68vh] place-items-center px-3 py-10 sm:px-6">
+        <div className="grid w-full max-w-4xl overflow-hidden rounded-2xl border border-[#e4e7ec] bg-white shadow-[0_24px_70px_rgba(41,50,78,0.13)] md:grid-cols-[0.8fr_1.2fr]">
+          <div className="relative flex min-h-64 flex-col justify-between overflow-hidden bg-[#29324e] p-7 text-white sm:p-9">
+            <div className="absolute -right-16 -top-16 size-52 rounded-full bg-[#dc2626]/20 blur-2xl" />
+            <div className="absolute -bottom-20 -left-16 size-56 rounded-full bg-[#3278f6]/20 blur-3xl" />
+            <div className="relative">
+              <span className="vnpay-result-icon grid size-28 place-items-center rounded-full border-[10px] border-white/10 bg-[#dc2626] text-white shadow-[0_14px_35px_rgba(220,38,38,0.32)] sm:size-32">
+                <svg aria-hidden="true" className="size-14 sm:size-16" fill="none" viewBox="0 0 52 52">
+                  <path className="vnpay-cross-path vnpay-cross-path-first" d="M16 16 36 36" pathLength="1" stroke="currentColor" strokeLinecap="round" strokeWidth="5" />
+                  <path className="vnpay-cross-path vnpay-cross-path-second" d="M36 16 16 36" pathLength="1" stroke="currentColor" strokeLinecap="round" strokeWidth="5" />
+                </svg>
+              </span>
+              <p className="mt-7 text-[11px] font-bold uppercase tracking-[0.2em] text-white/55">Giao dịch chưa hoàn tất</p>
+              <h1 className="mt-2 text-3xl font-black leading-tight">Thanh toán thất bại</h1>
+              <p className="mt-4 text-sm leading-6 text-white/65">Giao dịch VNPay chưa được ghi nhận. Bạn có thể quay lại giỏ hàng để thực hiện thanh toán lần nữa.</p>
+            </div>
+            <div className="relative mt-8 flex items-center gap-3 rounded-xl bg-white/[0.07] p-3 text-xs text-white/70">
+              <ShoppingBag className="size-5 shrink-0 text-[#7da9ff]" />
+              Sản phẩm trong giỏ hàng của bạn vẫn được giữ nguyên.
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center p-6 sm:p-9">
+            <div className="flex items-start gap-3 rounded-xl border border-[#fed7d7] bg-[#fff6f6] p-4">
+              <AlertTriangle className="mt-0.5 size-5 shrink-0 text-[#dc2626]" />
+              <div>
+                <p className="font-bold text-[#b42318]">Thanh toán chưa được xác nhận</p>
+                <p className="mt-1 text-sm leading-6 text-[#667085]">{result.message}</p>
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-3">
+              <div className="flex items-center gap-3 rounded-xl border border-[#eaecf0] p-3.5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eef4ff] text-[#3278f6]"><RefreshCw className="size-4" /></span>
+                <div><p className="text-sm font-bold text-[#344054]">Thử thanh toán lại</p><p className="mt-0.5 text-xs text-[#98a2b3]">Quay về giỏ hàng và chọn lại phương thức thanh toán.</p></div>
+              </div>
+              <div className="flex items-center gap-3 rounded-xl border border-[#eaecf0] p-3.5">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#f2f4f7] text-[#667085]"><CreditCard className="size-4" /></span>
+                <div><p className="text-sm font-bold text-[#344054]">Không phát sinh thanh toán</p><p className="mt-0.5 text-xs text-[#98a2b3]">Đơn hàng chỉ được ghi nhận thanh toán khi VNPay xác nhận thành công.</p></div>
+              </div>
+            </div>
+
+            <div className="mt-7 grid gap-3 sm:grid-cols-2">
+              <Button className="h-12 rounded-lg bg-[#3278f6] font-black hover:bg-[#2860c5]" asChild>
+                <Link to="/cart"><ShoppingBag className="size-4" /> Quay lại giỏ hàng <ArrowRight className="size-4" /></Link>
+              </Button>
+              <Button className="h-12 rounded-lg border-[#d0d5dd] font-bold text-[#344054] hover:border-[#3278f6] hover:text-[#3278f6]" variant="outline" asChild>
+                <Link to="/orders"><ReceiptText className="size-4" /> Xem đơn hàng</Link>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="relative grid min-h-[68vh] place-items-center overflow-hidden py-8">
@@ -93,8 +150,18 @@ export default function VnPayReturnPage() {
 
           <div className="relative">
             {result.success ? <Sparkles className="absolute left-1/2 top-0 size-6 -translate-x-20 -translate-y-1 text-[#fbbf24]" /> : null}
-            <span className={`vnpay-result-icon mx-auto grid size-24 place-items-center rounded-full border-[10px] ${result.success ? "border-[#ecfdf3] bg-[#22c55e] text-white" : "border-[#fef2f2] bg-[#dc2626] text-white"}`}>
-              <Icon className="size-11" strokeWidth={2.5} />
+            <span className="vnpay-result-icon mx-auto grid size-32 place-items-center rounded-full border-[12px] border-[#ecfdf3] bg-[#22c55e] text-white shadow-[0_14px_35px_rgba(34,197,94,0.3)] sm:size-36">
+              <svg aria-hidden="true" className="size-16 sm:size-20" fill="none" viewBox="0 0 52 52">
+                <path
+                  className="vnpay-checkmark-path"
+                  d="M14 27.5 22.5 36 39 18"
+                  pathLength="1"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="5"
+                />
+              </svg>
             </span>
           </div>
 

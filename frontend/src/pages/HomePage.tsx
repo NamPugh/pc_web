@@ -1,5 +1,6 @@
 import {
   ArrowRight,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -7,6 +8,7 @@ import {
   Search,
   Star,
 } from "lucide-react";
+import { Select } from "radix-ui";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
@@ -145,7 +147,7 @@ const productTypeLabels: Partial<Record<ProductType, string>> = {
 function FilterGroup({ children, title }: { children: ReactNode; title: string }) {
   return (
     <div className="border-b border-[#d8dce3] py-5 last:border-b-0">
-      <div className="flex items-center justify-between text-xs font-black uppercase tracking-wide text-[#8d94ac]">
+      <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wide text-[#667085]">
         <span>{title}</span><ChevronDown className="size-4" />
       </div>
       <div className="mt-4 space-y-3">{children}</div>
@@ -236,13 +238,13 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
       <div className="grid items-start gap-5 lg:grid-cols-[290px_minmax(0,1fr)]">
         <aside className="border border-[#e5e7eb] bg-white px-5 lg:sticky lg:top-40">
           <div className="flex items-center justify-between border-b border-[#d8dce3] py-5">
-            <h2 className="text-xl font-black text-[#1d2939]">Bộ lọc sản phẩm</h2>
+            <h2 className="text-xl font-bold leading-[1.35] tracking-normal text-[#1d2939]">Bộ lọc sản phẩm</h2>
             {hasFilters ? <button className="text-[#3278f6]" onClick={clearFilters} title="Xóa bộ lọc" type="button"><RotateCcw className="size-4" /></button> : null}
           </div>
 
           <FilterGroup title="Danh mục">
             {categoryOptions.map((option) => (
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
                 <input checked={selectedCategories.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedCategories, option.id, setSelectedCategories)} type="checkbox" />
                 <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
               </label>
@@ -252,7 +254,7 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
           {brandOptions.length ? (
             <FilterGroup title="Hãng sản xuất">
               {brandOptions.map((option) => (
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
                   <input checked={selectedBrands.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedBrands, option.id, setSelectedBrands)} type="checkbox" />
                   <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
                 </label>
@@ -265,7 +267,7 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
               const count = products.filter((product) => product.price >= range.min && product.price < range.max).length;
               if (!count) return null;
               return (
-                <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={range.id}>
+                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={range.id}>
                   <input checked={selectedRanges.includes(range.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedRanges, range.id, setSelectedRanges)} type="checkbox" />
                   <span className="min-w-0 flex-1">{range.label}</span><span className="text-xs text-[#98a2b3]">[{count}]</span>
                 </label>
@@ -275,7 +277,7 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
 
           <FilterGroup title="Loại sản phẩm">
             {typeOptions.map((option) => (
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-[#344054]" key={option.id}>
+               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
                 <input checked={selectedTypes.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedTypes, option.id, setSelectedTypes)} type="checkbox" />
                 <span className="min-w-0 flex-1">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
               </label>
@@ -285,23 +287,39 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
 
         <div className="min-w-0 border border-[#e5e7eb] bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#3278f6]">Kết quả tìm kiếm</p>
-              <h1 className="mt-1 border-b-[3px] border-[#3278f6] pb-1 text-2xl font-black uppercase text-[#29324e]">{keyword}</h1>
-            </div>
+            <h1 className="w-fit border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-[1.35] text-black">
+              Kết quả tìm kiếm: &quot;{keyword}&quot;
+            </h1>
             <div className="flex items-center gap-3 text-sm text-[#8d94ac]">
               {!loading ? <span>{visibleProducts.length} sản phẩm</span> : null}
               <span className="h-6 w-px bg-[#d0d5dd]" />
-              <label className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <span className="hidden sm:inline">Hiển thị theo:</span>
-                <select className="h-10 border border-[#d0d5dd] bg-white px-3 font-bold text-[#344054] outline-none focus:border-[#3278f6]" onChange={(event) => setSort(event.target.value)} value={sort}>
-                  <option value="default">Mặc định</option>
-                  <option value="price_asc">Giá tăng dần</option>
-                  <option value="price_desc">Giá giảm dần</option>
-                  <option value="rating_desc">Đánh giá cao</option>
-                  <option value="sold_desc">Bán chạy</option>
-                </select>
-              </label>
+                <Select.Root onValueChange={setSort} value={sort}>
+                  <Select.Trigger className="inline-flex h-10 min-w-36 items-center justify-between gap-3 rounded border border-[#d0d5dd] bg-white px-3 font-bold text-[#344054] outline-none transition hover:border-[#9cbcff] focus:border-[#3278f6] focus:ring-2 focus:ring-[#3278f6]/10">
+                    <Select.Value />
+                    <Select.Icon><ChevronDown className="size-4 text-[#667085]" /></Select.Icon>
+                  </Select.Trigger>
+                  <Select.Portal>
+                    <Select.Content className="z-[120] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded border border-[#d0d5dd] bg-white p-1 shadow-[0_12px_28px_rgba(41,50,78,0.16)]" position="popper" sideOffset={5}>
+                      <Select.Viewport>
+                        {[
+                          { value: "default", label: "Mặc định" },
+                          { value: "price_asc", label: "Giá tăng dần" },
+                          { value: "price_desc", label: "Giá giảm dần" },
+                          { value: "rating_desc", label: "Đánh giá cao" },
+                          { value: "sold_desc", label: "Bán chạy" },
+                        ].map((option) => (
+                          <Select.Item className="relative flex h-10 cursor-pointer select-none items-center rounded px-3 pr-9 text-sm font-medium text-[#344054] outline-none data-[highlighted]:bg-[#eef4ff] data-[highlighted]:text-[#3278f6] data-[state=checked]:font-bold data-[state=checked]:text-[#3278f6]" key={option.value} value={option.value}>
+                            <Select.ItemText>{option.label}</Select.ItemText>
+                            <Select.ItemIndicator className="absolute right-3"><Check className="size-4" /></Select.ItemIndicator>
+                          </Select.Item>
+                        ))}
+                      </Select.Viewport>
+                    </Select.Content>
+                  </Select.Portal>
+                </Select.Root>
+              </div>
             </div>
           </div>
 
@@ -333,19 +351,19 @@ function DealProductCard({ item }: { item: FlashSaleItem }) {
   const rating = product.ratingAverage || 0;
 
   return (
-    <article className="group relative min-w-[230px] flex-1 border-r border-[#e5e7eb] bg-white last:border-r-0">
+    <article className="group relative flex h-full min-w-0 flex-col overflow-hidden bg-white transition duration-200 after:pointer-events-none after:absolute after:inset-0 after:z-30 after:border-[4px] after:border-transparent after:content-[''] hover:z-10 hover:after:border-[#3278f6]">
       <span className="absolute left-0 top-0 z-10 bg-[#f97300] px-2 py-1 text-[11px] font-bold text-white">
         Best choice
       </span>
-      <Link className="block h-[240px] overflow-hidden p-5 pt-8" to={`/products/${product._id}`}>
+      <Link className="relative block aspect-square overflow-hidden bg-white p-0.5" to={`/products/${product._id}`}>
         <img
-          className="h-full w-full object-contain transition duration-300 group-hover:scale-105"
+          className="block h-full max-h-full w-full max-w-full object-contain transition duration-300 group-hover:scale-105"
           src={product.images?.[0] || "/icons.svg"}
           alt={product.name}
           loading="lazy"
         />
       </Link>
-      <div className="border-t border-[#e5e7eb] px-3 pb-3 pt-3">
+      <div className="flex flex-1 flex-col border-t border-[#e5e7eb] p-3">
         <Link className="line-clamp-2 min-h-11 text-[15px] font-semibold leading-[22px] text-[#25304e] transition hover:text-[#3278f6]" to={`/products/${product._id}`}>
           {product.name}
         </Link>
@@ -355,12 +373,14 @@ function DealProductCard({ item }: { item: FlashSaleItem }) {
           </span>
           <span className="text-[#98a2b3]">{product.ratingCount || 0} đánh giá</span>
         </div>
-        <p className="mt-2 text-sm text-[#98a2b3] line-through">{currency.format(product.price)}</p>
-        <div className="mt-0.5 flex items-center gap-2">
-          <strong className="text-xl font-bold text-[#fb4e4e]">{currency.format(item.dealPrice)}</strong>
-          {discount > 0 ? (
-            <span className="border border-[#fb4e4e] px-1.5 py-0.5 text-[11px] font-semibold text-[#fb4e4e]">-{discount}%</span>
-          ) : null}
+        <div className="mt-auto pt-3">
+          <p className="text-sm text-[#98a2b3] line-through">{currency.format(product.price)}</p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-2">
+            <strong className="text-xl font-bold text-[#fb4e4e]">{currency.format(item.dealPrice)}</strong>
+            {discount > 0 ? (
+              <span className="border border-[#fb4e4e] px-1.5 py-0.5 text-[11px] font-semibold text-[#fb4e4e]">-{discount}%</span>
+            ) : null}
+          </div>
         </div>
         <div className="mt-3 bg-[#ff9ca0] py-1 text-center text-xs font-bold text-white">
           Còn lại: {remaining}
@@ -434,6 +454,9 @@ export default function HomePage() {
   const dealSliderRef = useRef<HTMLDivElement>(null);
   const [searchParams] = useSearchParams();
   const searchKeyword = searchParams.get("keyword") || "";
+  const searchCategoryId = searchParams.get("category") || "";
+  const searchCategoryName = searchParams.get("categoryName") || "";
+  const hasSearchFilter = Boolean(searchKeyword || searchCategoryId);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeSale, setActiveSale] = useState<FlashSale | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
@@ -459,11 +482,12 @@ export default function HomePage() {
   const params = useMemo(
     () => ({
       keyword: debouncedKeyword || undefined,
+      category: searchCategoryId || undefined,
       brand: brand || undefined,
       sort: "created_desc",
       limit: 500,
     }),
-    [brand, debouncedKeyword],
+    [brand, debouncedKeyword, searchCategoryId],
   );
 
   useEffect(() => {
@@ -542,7 +566,7 @@ export default function HomePage() {
 
   return (
     <section className="space-y-8 pb-8">
-      {!searchKeyword ? <section className="bg-[#f5f5f5]">
+      {!hasSearchFilter ? <section className="bg-[#f5f5f5]">
         <div className="mx-auto grid max-w-[1600px] gap-3 px-3 lg:grid-cols-[minmax(0,1fr)]">
           <div className="relative overflow-hidden bg-white">
             <div className="flex transition-transform duration-700 ease-out" style={{ transform: `translateX(-${activeBanner * 100}%)` }}>
@@ -583,14 +607,14 @@ export default function HomePage() {
         </div>
       </section> : null}
 
-      {searchKeyword ? (
-        <SearchResults key={searchKeyword} keyword={searchKeyword} loading={loading} products={products} />
+      {hasSearchFilter ? (
+        <SearchResults key={`${searchKeyword}-${searchCategoryId}`} keyword={searchKeyword || searchCategoryName || "Danh mục sản phẩm"} loading={loading} products={products} />
       ) : null}
 
-      {!searchKeyword ? <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
+      {!hasSearchFilter ? <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
           <div className="flex flex-wrap items-center gap-4">
-            <h2 className="border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-none text-black">Deal giờ vàng</h2>
+            <h2 className="border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-[1.3] text-black">Deal giờ vàng</h2>
             <span className="hidden h-7 w-px rotate-[18deg] bg-[#d0d5dd] sm:block" />
             <DealClock endAt={activeSale?.endAt} />
           </div>
@@ -618,7 +642,7 @@ export default function HomePage() {
               ref={dealSliderRef}
             >
               {dealItems.map((item) => (
-                <div className="min-w-[230px] snap-start sm:min-w-[250px] lg:min-w-[20%]" key={item._id}>
+                <div className="w-[230px] shrink-0 snap-start border-r border-[#e5e7eb] last:border-r-0 sm:w-[250px] lg:w-1/5" key={item._id}>
                   <DealProductCard item={item} />
                 </div>
               ))}
@@ -635,7 +659,7 @@ export default function HomePage() {
         )}
       </section> : null}
 
-      {!searchKeyword ? <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
+      {!hasSearchFilter ? <section className="mx-auto max-w-[1600px] border border-[#ededed] bg-white p-6">
         <SectionHeader title="Chuyên trang khuyến mãi" keyword="Khuyến mãi" />
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {(managedPromotions.length ? managedPromotions : promotionBanners).map((banner) =>
@@ -659,7 +683,7 @@ export default function HomePage() {
         </div>
       </section> : null}
 
-      {!searchKeyword ? (managedProductSections.length ? managedProductSections : productSections).map((section) => {
+      {!hasSearchFilter ? (managedProductSections.length ? managedProductSections : productSections).map((section) => {
         const isManagedSection = "bannerImage" in section;
         const sectionProducts = isManagedSection
           ? section.products.slice(0, 4)

@@ -174,17 +174,26 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
                       <stop offset="0%" stopColor="#465fff" stopOpacity="0.24" />
                       <stop offset="100%" stopColor="#465fff" stopOpacity="0.01" />
                     </linearGradient>
-                  </defs>
-                  <path d={areaPath} fill="url(#adminRevenueArea)" />
-                  <path d={linePath} fill="none" stroke="#465fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" vectorEffect="non-scaling-stroke" />
+                   </defs>
+                   <path d={areaPath} fill="url(#adminRevenueArea)" />
+                   <path d={linePath} fill="none" stroke="#465fff" strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" vectorEffect="non-scaling-stroke" />
+                 </svg>
+               ) : <div className="grid h-[230px] place-items-center text-sm text-[#98a2b3]">Chưa có dữ liệu doanh thu.</div>}
+              {chartPoints.length ? (
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-[230px]">
                   {chartPoints.map((point) => (
-                    <g className="group" key={point.date}>
-                      <circle cx={point.x} cy={point.y} fill="white" r="7" stroke="#465fff" strokeWidth="4" vectorEffect="non-scaling-stroke" />
-                      <title>{currency.format(point.revenue)} · {point.orders} đơn</title>
-                    </g>
+                    <span
+                      className="absolute size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#465fff] bg-white shadow-[0_0_0_2px_rgba(255,255,255,0.8)]"
+                      key={point.date}
+                      style={{
+                        left: `${(point.x / chartWidth) * 100}%`,
+                        top: `${(point.y / chartHeight) * 100}%`,
+                      }}
+                      title={`${currency.format(point.revenue)} · ${point.orders} đơn`}
+                    />
                   ))}
-                </svg>
-              ) : <div className="grid h-[230px] place-items-center text-sm text-[#98a2b3]">Chưa có dữ liệu doanh thu.</div>}
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-7 gap-1 pt-3 text-center">
                 {chartData.map((item) => {

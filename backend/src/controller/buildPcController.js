@@ -73,6 +73,13 @@ export const saveBuild = async (req, res) => {
   try {
     const { name, components, note } = req.body;
 
+    if (!components?.cooler?.product) {
+      return res.status(400).json({
+        success: false,
+        message: "Tản nhiệt là linh kiện bắt buộc"
+      });
+    }
+
     const totalPrice = await calculateBuildTotal(components || {});
 
     const build = await PCBuild.create({

@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Download, FileSpreadsheet, LoaderCircle, Upload, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { memo, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
 import { adminApi, getErrorMessage } from "@/api/client";
@@ -40,6 +40,35 @@ type ImportRow = {
   status: Product["status"];
   errors: string[];
 };
+
+const ImportPreviewRow = memo(function ImportPreviewRow({ row }: { row: ImportRow }) {
+  return (
+    <div
+      className="grid grid-cols-[65px_minmax(250px,1fr)_130px_100px_150px_130px_minmax(220px,1fr)] items-center gap-2 px-4 py-3 text-sm [content-visibility:auto] [contain-intrinsic-size:0_62px]"
+    >
+      <span className="font-bold text-[#667085]">{row.rowNumber}</span>
+      <div className="min-w-0">
+        <p className="truncate font-bold text-[#344054]">{row.name || "—"}</p>
+        <p className="truncate text-xs text-[#98a2b3]">{row.brandName || "Không thương hiệu"}</p>
+      </div>
+      <span>{Number.isFinite(row.price) ? currency.format(row.price) : "—"}</span>
+      <span>{row.stock}</span>
+      <span className="truncate">{row.categoryName || "—"}</span>
+      <span className="uppercase">{row.productType}</span>
+      {row.errors.length ? (
+        <span className="flex items-start gap-2 text-xs font-semibold leading-5 text-[#b91c1c]">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          {row.errors.join(" · ")}
+        </span>
+      ) : (
+        <span className="flex items-center gap-2 text-xs font-bold text-[#15803d]">
+          <CheckCircle2 className="size-4" />
+          Hợp lệ
+        </span>
+      )}
+    </div>
+  );
+});
 
 const headerAliases: Record<string, string[]> = {
   name: ["ten san pham", "tên sản phẩm", "name", "product name"],
@@ -367,38 +396,35 @@ export default function ProductExcelImporter({ categories, brands, products, onI
 
   return (
     <>
-      <Button className="h-10 rounded-none border-[#16a34a] text-[#15803d] hover:bg-[#f0fdf4]" onClick={() => setOpen(true)} type="button" variant="outline">
+      <Button className="h-10 rounded-lg border-[#16a34a] text-[#15803d] hover:bg-[#f0fdf4]" onClick={() => setOpen(true)} type="button" variant="outline">
         <FileSpreadsheet className="size-4" />
         Nhập từ Excel
       </Button>
 
       {open ? (
-        <div className="fixed inset-0 z-[90] grid place-items-center bg-[#101828]/60 p-4 backdrop-blur-[2px]" onMouseDown={close}>
-          <section className="max-h-[92vh] w-full max-w-6xl overflow-y-auto bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
+        <div className="fixed inset-0 z-[90] grid place-items-center bg-[#101828]/60 p-4" onMouseDown={close}>
+          <section className="max-h-[92vh] w-full max-w-6xl overflow-hidden rounded-2xl bg-white shadow-[0_20px_60px_rgba(16,24,40,0.28)]" onMouseDown={(event) => event.stopPropagation()}>
             <header className="sticky top-0 z-10 flex items-center justify-between border-b border-[#e5e7eb] bg-white px-5 py-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#16a34a]">Nhập hàng loạt</p>
-                <h2 className="mt-1 text-xl font-black text-[#1d2939]">Thêm sản phẩm từ Excel</h2>
-              </div>
-              <button className="grid size-10 place-items-center text-[#667085] hover:bg-[#f2f4f7]" disabled={importing} onClick={close} type="button"><X className="size-5" /></button>
+              <h2 className="text-xl font-black text-[#1d2939]">Thêm sản phẩm từ Excel</h2>
+              <button className="grid size-9 place-items-center rounded-lg text-[#667085] transition hover:bg-[#f2f4f7]" disabled={importing} onClick={close} type="button"><X className="size-5" /></button>
             </header>
 
-            <div className="space-y-5 p-5">
+            <div className="max-h-[calc(92vh-73px)] space-y-5 overflow-y-auto overscroll-contain p-5">
               <div className="grid gap-4 lg:grid-cols-[1fr_auto]">
-                <div className="border border-dashed border-[#9cbcff] bg-[#f8faff] p-6 text-center">
+                <div className="rounded-xl border border-dashed border-[#9cbcff] bg-[#f8faff] p-6 text-center">
                   <input accept=".xlsx" className="hidden" onChange={(event) => void parseFile(event.target.files?.[0])} ref={fileInputRef} type="file" />
                   {parsing ? <LoaderCircle className="mx-auto size-8 animate-spin text-[#3278f6]" /> : <Upload className="mx-auto size-8 text-[#3278f6]" />}
                   <p className="mt-3 font-bold text-[#344054]">{fileName || "Chọn file Excel chứa danh sách sản phẩm"}</p>
                   <p className="mt-1 text-xs text-[#8d94ac]">Hỗ trợ .xlsx · tương thích mẫu TNC và mẫu tải từ hệ thống</p>
-                  <Button className="mt-4 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" disabled={parsing || importing} onClick={() => fileInputRef.current?.click()} type="button">
+                  <Button className="mt-4 rounded-lg bg-[#3278f6] hover:bg-[#2860c5]" disabled={parsing || importing} onClick={() => fileInputRef.current?.click()} type="button">
                     {rows.length ? "Chọn file khác" : "Chọn file Excel"}
                   </Button>
                 </div>
-                <div className="flex min-w-64 flex-col justify-center border border-[#e5e7eb] p-5">
+                <div className="flex min-w-64 flex-col justify-center rounded-xl border border-[#e5e7eb] p-5">
                   <Download className="size-6 text-[#16a34a]" />
                   <p className="mt-3 font-bold text-[#344054]">Chưa có file đúng mẫu?</p>
                   <p className="mt-1 text-xs leading-5 text-[#8d94ac]">Tải file mẫu có sẵn tiêu đề và một dòng minh họa.</p>
-                  <Button className="mt-4 rounded-none" onClick={() => void downloadTemplate()} type="button" variant="outline">
+                  <Button className="mt-4 rounded-lg" onClick={() => void downloadTemplate()} type="button" variant="outline">
                     <Download className="size-4" /> Tải file mẫu
                   </Button>
                 </div>
@@ -407,32 +433,18 @@ export default function ProductExcelImporter({ categories, brands, products, onI
               {rows.length ? (
                 <>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="border border-[#e5e7eb] p-4"><p className="text-sm text-[#667085]">Tổng số dòng</p><p className="mt-1 text-2xl font-black text-[#1d2939]">{rows.length}</p></div>
-                    <div className="border border-[#bbf7d0] bg-[#f0fdf4] p-4"><p className="text-sm text-[#15803d]">Có thể nhập</p><p className="mt-1 text-2xl font-black text-[#15803d]">{validRows.length}</p></div>
-                    <div className="border border-[#fecaca] bg-[#fef2f2] p-4"><p className="text-sm text-[#b91c1c]">Cần sửa trong file</p><p className="mt-1 text-2xl font-black text-[#b91c1c]">{invalidRows}</p></div>
+                    <div className="rounded-xl border border-[#e5e7eb] p-4"><p className="text-sm text-[#667085]">Tổng số dòng</p><p className="mt-1 text-2xl font-black text-[#1d2939]">{rows.length}</p></div>
+                    <div className="rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] p-4"><p className="text-sm text-[#15803d]">Có thể nhập</p><p className="mt-1 text-2xl font-black text-[#15803d]">{validRows.length}</p></div>
+                    <div className="rounded-xl border border-[#fecaca] bg-[#fef2f2] p-4"><p className="text-sm text-[#b91c1c]">Cần sửa trong file</p><p className="mt-1 text-2xl font-black text-[#b91c1c]">{invalidRows}</p></div>
                   </div>
 
-                  <div className="overflow-x-auto border border-[#e5e7eb]">
+                  <div className="overflow-x-auto rounded-xl border border-[#e5e7eb]">
                     <div className="min-w-[1050px]">
                       <div className="grid grid-cols-[65px_minmax(250px,1fr)_130px_100px_150px_130px_minmax(220px,1fr)] bg-[#f9fafb] px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-[#667085]">
                         <span>Dòng</span><span>Sản phẩm</span><span>Giá</span><span>Kho</span><span>Danh mục</span><span>Loại</span><span>Trạng thái kiểm tra</span>
                       </div>
                       <div className="max-h-[380px] divide-y divide-[#eef0f3] overflow-y-auto">
-                        {rows.map((row) => (
-                          <div className="grid grid-cols-[65px_minmax(250px,1fr)_130px_100px_150px_130px_minmax(220px,1fr)] items-center gap-2 px-4 py-3 text-sm" key={row.rowNumber}>
-                            <span className="font-bold text-[#667085]">{row.rowNumber}</span>
-                            <div className="min-w-0"><p className="truncate font-bold text-[#344054]">{row.name || "—"}</p><p className="truncate text-xs text-[#98a2b3]">{row.brandName || "Không thương hiệu"}</p></div>
-                            <span>{Number.isFinite(row.price) ? currency.format(row.price) : "—"}</span>
-                            <span>{row.stock}</span>
-                            <span className="truncate">{row.categoryName || "—"}</span>
-                            <span className="uppercase">{row.productType}</span>
-                            {row.errors.length ? (
-                              <span className="flex items-start gap-2 text-xs font-semibold leading-5 text-[#b91c1c]"><AlertCircle className="mt-0.5 size-4 shrink-0" />{row.errors.join(" · ")}</span>
-                            ) : (
-                              <span className="flex items-center gap-2 text-xs font-bold text-[#15803d]"><CheckCircle2 className="size-4" />Hợp lệ</span>
-                            )}
-                          </div>
-                        ))}
+                        {rows.map((row) => <ImportPreviewRow key={row.rowNumber} row={row} />)}
                       </div>
                     </div>
                   </div>
@@ -445,8 +457,8 @@ export default function ProductExcelImporter({ categories, brands, products, onI
                   ) : null}
 
                   <div className="flex flex-wrap justify-end gap-2">
-                    <Button className="rounded-none" disabled={importing} onClick={close} type="button" variant="outline">Hủy</Button>
-                    <Button className="rounded-none bg-[#16a34a] hover:bg-[#15803d]" disabled={!validRows.length || importing} onClick={() => void importProducts()} type="button">
+                    <Button className="rounded-lg" disabled={importing} onClick={close} type="button" variant="outline">Hủy</Button>
+                    <Button className="rounded-lg bg-[#16a34a] hover:bg-[#15803d]" disabled={!validRows.length || importing} onClick={() => void importProducts()} type="button">
                       {importing ? <LoaderCircle className="size-4 animate-spin" /> : <FileSpreadsheet className="size-4" />}
                       Nhập {validRows.length} sản phẩm hợp lệ
                     </Button>

@@ -17,6 +17,7 @@ import newsRoute from './routes/newsRoute.js';
 import flashSaleRoute from './routes/flashSaleRoute.js';
 import homeSectionRoute from './routes/homeSectionRoute.js';
 import paymentRoute from './routes/paymentRoute.js';
+import siteSettingRoute from './routes/siteSettingRoute.js';
 import errorMiddleware from './middlewares/errorMiddleware.js';
 dotenv.config();
 const PORT = process.env.PORT || 5000;
@@ -43,6 +44,7 @@ app.use('/api/news', newsRoute);
 app.use('/api/flash-sales', flashSaleRoute);
 app.use('/api/home-sections', homeSectionRoute);
 app.use('/api/reviews', reviewRoute);
+app.use('/api/site-settings', siteSettingRoute);
 // private routes
 app.use('/api/users', userRoute);
 app.use('/api/products', productRoute);

@@ -1,21 +1,21 @@
 import {
   ArrowLeft,
+  BadgePercent,
   Bell,
-  Boxes,
+  Building2,
   ChevronDown,
   ChevronRight,
-  CircleHelp,
-  Flame,
-  Image,
-  LayoutDashboard,
-  LayoutGrid,
+  ClipboardList,
+  Gauge,
+  Images,
   LogOut,
   Menu,
   PackageCheck,
+  PackageSearch,
+  PanelsTopLeft,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
-  ShieldCheck,
   Store,
   X,
 } from "lucide-react";
@@ -30,18 +30,20 @@ import CatalogManager from "@/components/admin/CatalogManager";
 import DealManager from "@/components/admin/DealManager";
 import HomeSectionManager from "@/components/admin/HomeSectionManager";
 import OrderManager from "@/components/admin/OrderManager";
+import SiteSettingManager from "@/components/admin/SiteSettingManager";
 import { useAuthStore } from "@/store/auth";
 import type { Order, OrderStats } from "@/types";
 
-type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners" | "home-sections";
+type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners" | "home-sections" | "about";
 
-const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof LayoutDashboard }> = [
-  { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: LayoutDashboard },
-  { id: "orders", label: "Đơn hàng", helper: "Xử lý và giao hàng", icon: PackageCheck },
-  { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: Boxes },
-  { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: Flame },
-  { id: "banners", label: "Banner", helper: "Giao diện website", icon: Image },
-  { id: "home-sections", label: "Danh mục trang chủ", helper: "Banner & sản phẩm hiển thị", icon: LayoutGrid },
+const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof Gauge }> = [
+  { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: Gauge },
+  { id: "orders", label: "Đơn hàng", helper: "Xử lý và giao hàng", icon: ClipboardList },
+  { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: PackageSearch },
+  { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: BadgePercent },
+  { id: "banners", label: "Banner", helper: "Giao diện website", icon: Images },
+  { id: "home-sections", label: "Danh mục trang chủ", helper: "Banner & sản phẩm hiển thị", icon: PanelsTopLeft },
+  { id: "about", label: "Về chúng tôi", helper: "Thông tin website & footer", icon: Building2 },
 ];
 
 export default function AdminPage() {
@@ -142,6 +144,13 @@ export default function AdminPage() {
     await Promise.all([loadOrders(), loadStats()]);
   };
 
+  const handleOrderUpdated = (updatedOrder: Order) => {
+    setOrders((current) => current.map((order) => order._id === updatedOrder._id ? updatedOrder : order));
+    void adminApi.orderStats()
+      .then(({ data }) => setStats(data.data))
+      .catch(() => undefined);
+  };
+
   const changeView = (nextView: AdminView) => {
     setView(nextView);
     setMobileMenuOpen(false);
@@ -157,59 +166,49 @@ export default function AdminPage() {
 
   const sidebarContent = (mobile = false) => (
     <div className="flex h-full flex-col">
-      <div className={`flex h-[76px] shrink-0 items-center border-b border-[#eaecf0] ${sidebarOpen || mobile ? "justify-between px-5" : "justify-center"}`}>
+      <div className={`flex h-[76px] shrink-0 items-center border-b border-white/10 ${sidebarOpen || mobile ? "justify-between px-5" : "justify-center"}`}>
         {sidebarOpen || mobile ? (
-          <button className="flex items-center gap-3 text-left" onClick={() => navigate("/admin")} type="button">
-            <span className="grid size-10 place-items-center rounded-xl bg-[#465fff] text-white shadow-[0_6px_16px_rgba(70,95,255,0.28)]"><ShieldCheck className="size-5" /></span>
-            <span><b className="block text-[17px] font-black tracking-tight text-[#101828]">PC WEB</b><small className="block text-[10px] font-bold uppercase tracking-[0.18em] text-[#98a2b3]">Admin dashboard</small></span>
+          <button className="text-left" onClick={() => navigate("/admin")} type="button">
+            <b className="block text-xl font-bold tracking-tight text-white">Dashboard</b>
           </button>
         ) : null}
         {mobile ? (
-          <button className="grid size-9 place-items-center rounded-lg text-[#667085] hover:bg-[#f2f4f7]" onClick={() => setMobileMenuOpen(false)} type="button"><X className="size-5" /></button>
+          <button className="grid size-9 place-items-center rounded-lg text-white/70 hover:bg-white/10 hover:text-white" onClick={() => setMobileMenuOpen(false)} type="button"><X className="size-5" /></button>
         ) : (
-          <button className="grid size-9 place-items-center rounded-lg text-[#667085] transition hover:bg-[#f2f4f7] hover:text-[#344054]" onClick={() => setSidebarOpen((current) => !current)} title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"} type="button">
+          <button className="grid size-9 place-items-center rounded-lg text-white/65 transition hover:bg-white/10 hover:text-white" onClick={() => setSidebarOpen((current) => !current)} title={sidebarOpen ? "Thu gọn menu" : "Mở rộng menu"} type="button">
             {sidebarOpen ? <PanelLeftClose className="size-5" /> : <PanelLeftOpen className="size-5" />}
           </button>
         )}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-3 py-5">
-        {sidebarOpen || mobile ? <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-[#98a2b3]">Menu</p> : null}
+        {sidebarOpen || mobile ? <p className="mb-3 px-3 text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">Menu</p> : null}
         <nav className="space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = view === item.id;
             return (
               <button
-                className={`group flex min-h-12 w-full items-center rounded-lg text-left transition ${sidebarOpen || mobile ? "gap-3 px-3 py-2.5" : "justify-center"} ${active ? "bg-[#ecf3ff] text-[#465fff]" : "text-[#344054] hover:bg-[#f2f4f7]"}`}
+                className={`group flex h-12 w-full items-center rounded-lg text-left transition ${sidebarOpen || mobile ? "gap-3 px-3" : "justify-center"} ${active ? "bg-[#3278f6] text-white shadow-[0_6px_18px_rgba(50,120,246,0.25)]" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
                 key={item.id}
                 onClick={() => changeView(item.id)}
                 title={item.label}
                 type="button"
               >
-                <Icon className={`size-5 shrink-0 ${active ? "text-[#465fff]" : "text-[#667085] group-hover:text-[#344054]"}`} />
-                {sidebarOpen || mobile ? <span className="min-w-0 flex-1"><b className="block text-sm font-semibold">{item.label}</b><small className={`block truncate text-[11px] ${active ? "text-[#465fff]/70" : "text-[#98a2b3]"}`}>{item.helper}</small></span> : null}
+                <Icon className={`size-5 shrink-0 ${active ? "text-white" : "text-white/55 group-hover:text-white"}`} />
+                {sidebarOpen || mobile ? <span className="min-w-0 flex-1 truncate text-sm font-semibold">{item.label}</span> : null}
                 {active && (sidebarOpen || mobile) ? <ChevronRight className="size-4" /> : null}
               </button>
             );
           })}
         </nav>
-
-        {sidebarOpen || mobile ? (
-          <div className="mt-7 rounded-2xl bg-gradient-to-br from-[#465fff] to-[#7592ff] p-4 text-white">
-            <CircleHelp className="size-6" />
-            <p className="mt-3 text-sm font-bold">Trung tâm quản trị</p>
-            <p className="mt-1 text-xs leading-5 text-white/75">Quản lý cửa hàng, tồn kho và nội dung tại một nơi.</p>
-            <button className="mt-3 rounded-lg bg-white/15 px-3 py-2 text-xs font-bold transition hover:bg-white/25" onClick={() => navigate("/")} type="button">Xem cửa hàng</button>
-          </div>
-        ) : null}
       </div>
 
-      <div className="shrink-0 border-t border-[#eaecf0] p-3">
-        <button className={`flex h-11 w-full items-center rounded-lg text-[#475467] transition hover:bg-[#f2f4f7] ${sidebarOpen || mobile ? "gap-3 px-3" : "justify-center"}`} onClick={() => navigate("/")} title="Về trang bán hàng" type="button">
+      <div className="shrink-0 border-t border-white/10 p-3">
+        <button className={`flex h-11 w-full items-center rounded-lg text-white/70 transition hover:bg-white/10 hover:text-white ${sidebarOpen || mobile ? "gap-3 px-3" : "justify-center"}`} onClick={() => navigate("/")} title="Về trang bán hàng" type="button">
           <ArrowLeft className="size-5 shrink-0" />{sidebarOpen || mobile ? <span className="text-sm font-semibold">Về trang bán hàng</span> : null}
         </button>
-        <button className={`mt-1 flex h-11 w-full items-center rounded-lg text-[#d92d20] transition hover:bg-[#fef3f2] ${sidebarOpen || mobile ? "gap-3 px-3" : "justify-center"}`} onClick={() => void handleSignOut()} title="Đăng xuất" type="button">
+        <button className={`mt-1 flex h-11 w-full items-center rounded-lg text-[#ff8b8b] transition hover:bg-[#ff4d4f]/15 hover:text-[#ffb3b3] ${sidebarOpen || mobile ? "gap-3 px-3" : "justify-center"}`} onClick={() => void handleSignOut()} title="Đăng xuất" type="button">
           <LogOut className="size-5 shrink-0" />{sidebarOpen || mobile ? <span className="text-sm font-semibold">Đăng xuất</span> : null}
         </button>
       </div>
@@ -219,18 +218,18 @@ export default function AdminPage() {
   return (
     <div className="tailadmin-admin min-h-screen bg-[#f7f9fc] text-[#101828]">
       <div className="flex min-h-screen">
-        <aside className={`hidden shrink-0 border-r border-[#eaecf0] bg-white transition-[width] duration-300 lg:block ${sidebarOpen ? "w-[290px]" : "w-[86px]"}`}>
+        <aside className={`hidden shrink-0 border-r border-white/10 bg-[#29324e] transition-[width] duration-300 lg:block ${sidebarOpen ? "w-[290px]" : "w-[86px]"}`}>
           <div className="sticky top-0 h-screen">{sidebarContent()}</div>
         </aside>
 
         {mobileMenuOpen ? <button aria-label="Đóng menu" className="fixed inset-0 z-40 bg-[#101828]/45 backdrop-blur-[2px] lg:hidden" onClick={() => setMobileMenuOpen(false)} type="button" /> : null}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-[290px] bg-white shadow-2xl transition-transform duration-300 lg:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <aside className={`fixed inset-y-0 left-0 z-50 w-[290px] bg-[#29324e] shadow-2xl transition-transform duration-300 lg:hidden ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
           {sidebarContent(true)}
         </aside>
 
         <main className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-[#eaecf0] bg-white/95 px-4 backdrop-blur sm:px-6 xl:px-8">
-            <div className="flex h-[76px] items-center justify-between gap-3">
+          <header className="sticky top-0 z-30 h-[76px] border-b border-[#eaecf0] bg-white/95 px-4 backdrop-blur sm:px-6 xl:px-8">
+            <div className="flex h-full items-center justify-between gap-3">
               <div className="flex min-w-0 items-center gap-3">
                 <button className="grid size-11 shrink-0 place-items-center rounded-lg border border-[#e4e7ec] text-[#475467] lg:hidden" onClick={() => setMobileMenuOpen(true)} type="button"><Menu className="size-5" /></button>
                 <div className="relative hidden w-[min(38vw,430px)] md:block">
@@ -294,17 +293,16 @@ export default function AdminPage() {
                 <div>
                   <div className="flex items-center gap-2 text-xs font-semibold text-[#667085]"><span>Admin</span><ChevronRight className="size-3.5" /><span className="text-[#465fff]">{currentNav.label}</span></div>
                   <h1 className="mt-2 text-2xl font-bold tracking-tight text-[#101828] sm:text-3xl">{currentNav.label}</h1>
-                  <p className="mt-1 text-sm text-[#667085]">{currentNav.helper}</p>
                 </div>
-                <button className="inline-flex h-10 items-center gap-2 rounded-lg border border-[#e4e7ec] bg-white px-4 text-sm font-semibold text-[#344054] shadow-sm transition hover:bg-[#f9fafb]" onClick={() => navigate("/")} type="button"><Store className="size-4 text-[#465fff]" />Xem website</button>
               </div>
 
               {view === "overview" ? <AdminOverview loading={loadingStats} onOpenOrders={openOrders} stats={stats} /> : null}
-              {view === "orders" ? <OrderManager initialStatus={orderFilter} key={orderFilter} loading={loadingOrders} onReload={reloadOrdersAndStats} orders={orders} /> : null}
+              {view === "orders" ? <OrderManager initialStatus={orderFilter} key={orderFilter} loading={loadingOrders} onOrderUpdated={handleOrderUpdated} onReload={reloadOrdersAndStats} orders={orders} /> : null}
               {view === "catalog" ? <CatalogManager /> : null}
               {view === "deals" ? <DealManager /> : null}
               {view === "banners" ? <BannerManager /> : null}
               {view === "home-sections" ? <HomeSectionManager /> : null}
+              {view === "about" ? <SiteSettingManager /> : null}
             </div>
           </div>
         </main>

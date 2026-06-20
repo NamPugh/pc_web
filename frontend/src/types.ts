@@ -41,6 +41,21 @@ export type HomeSection = {
   updatedAt?: string;
 };
 
+export type SiteSetting = {
+  _id?: string;
+  phone: string;
+  email: string;
+  footerTitle: string;
+  footerDescription: string;
+  showroomAddress: string;
+  warrantyAddress: string;
+  newsletterTitle: string;
+  newsletterDescription: string;
+  copyright: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 export type Brand = {
   _id: string;
   name: string;

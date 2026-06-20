@@ -60,7 +60,7 @@ const componentGroups: Array<{
   { type: "hdd", label: "Ổ CỨNG HDD", helper: "Ổ cứng lưu trữ", icon: HardDrive },
   { type: "psu", label: "NGUỒN", helper: "Bộ nguồn máy tính", required: true, icon: Zap },
   { type: "case", label: "VỎ CASE", helper: "Thùng máy", required: true, icon: PackageCheck },
-  { type: "cooler", label: "TẢN NHIỆT", helper: "Làm mát CPU", icon: Fan },
+  { type: "cooler", label: "TẢN NHIỆT", helper: "Làm mát CPU", required: true, icon: Fan },
   { type: "monitor", label: "MÀN HÌNH", helper: "Thiết bị hiển thị", icon: Monitor },
   { type: "keyboard", label: "BÀN PHÍM", helper: "Thiết bị ngoại vi", icon: Keyboard },
   { type: "mouse", label: "CHUỘT", helper: "Thiết bị ngoại vi", icon: Mouse },
@@ -173,6 +173,10 @@ export default function BuildPcPage() {
       toast.warning("Hãy chọn ít nhất một linh kiện");
       return;
     }
+    if (!selected.cooler) {
+      toast.warning("Tản nhiệt là linh kiện bắt buộc");
+      return;
+    }
     setSaving(true);
     try {
       await buildPcApi.save(buildPayload());
@@ -187,6 +191,10 @@ export default function BuildPcPage() {
   const addCurrentToCart = async () => {
     if (!chosenProducts.length) {
       toast.warning("Hãy chọn ít nhất một linh kiện");
+      return;
+    }
+    if (!selected.cooler) {
+      toast.warning("Tản nhiệt là linh kiện bắt buộc");
       return;
     }
     setAdding(true);
@@ -306,7 +314,7 @@ export default function BuildPcPage() {
         <div className="fixed inset-0 z-[100] grid place-items-center bg-[#101828]/70 p-3 backdrop-blur-[2px]" onMouseDown={closeSelector}>
           <section className="flex max-h-[94vh] w-full max-w-6xl flex-col bg-white shadow-2xl" onMouseDown={(event) => event.stopPropagation()}>
             <header className="flex items-center justify-between border-b border-[#e5e7eb] px-5 py-4">
-              <div><p className="text-xs font-black uppercase tracking-[0.16em] text-[#3278f6]">Chọn linh kiện mới</p><h2 className="mt-1 text-xl font-black text-[#1d2939]">{selectorGroup?.label} — {selectorGroup?.helper}</h2></div>
+              <h2 className="text-xl font-black text-[#1d2939]">{selectorGroup?.label} — {selectorGroup?.helper}</h2>
               <button className="grid size-10 place-items-center text-[#667085] hover:bg-[#f2f4f7]" onClick={closeSelector} type="button"><X className="size-5" /></button>
             </header>
             <div className="grid gap-3 border-b border-[#e5e7eb] p-4 sm:grid-cols-[minmax(0,1fr)_190px]">
