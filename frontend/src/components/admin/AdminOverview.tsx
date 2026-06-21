@@ -30,13 +30,12 @@ const statusItems: Array<{
   label: string;
   icon: typeof Clock3;
   color: string;
-  background: string;
 }> = [
-  { status: "pending", label: "Chờ xác nhận", icon: Clock3, color: "#f79009", background: "#fff6ed" },
-  { status: "confirmed", label: "Đã xác nhận", icon: PackageCheck, color: "#465fff", background: "#ecf3ff" },
-  { status: "shipping", label: "Đang giao", icon: Truck, color: "#7a5af8", background: "#f4f3ff" },
-  { status: "completed", label: "Hoàn thành", icon: CheckCircle2, color: "#12b76a", background: "#ecfdf3" },
-  { status: "cancelled", label: "Đã hủy", icon: XCircle, color: "#f04438", background: "#fef3f2" },
+  { status: "pending", label: "Chờ xác nhận", icon: Clock3, color: "#f79009" },
+  { status: "confirmed", label: "Đã xác nhận", icon: PackageCheck, color: "#465fff" },
+  { status: "shipping", label: "Đang giao", icon: Truck, color: "#7a5af8" },
+  { status: "completed", label: "Hoàn thành", icon: CheckCircle2, color: "#12b76a" },
+  { status: "cancelled", label: "Đã hủy", icon: XCircle, color: "#f04438" },
 ];
 
 type Props = {
@@ -75,7 +74,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
       badge: `${growth >= 0 ? "+" : ""}${growth.toFixed(1)}%`,
       icon: Banknote,
       positive: growth >= 0,
-      accent: "bg-[#ecf3ff] text-[#465fff]",
+      accent: "text-[#465fff]",
     },
     {
       label: "Đơn hàng tháng",
@@ -84,7 +83,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
       badge: String(stats?.statusCounts.pending || 0),
       icon: ShoppingBag,
       positive: true,
-      accent: "bg-[#fff6ed] text-[#f79009]",
+      accent: "text-[#f79009]",
     },
     {
       label: "Giá trị trung bình",
@@ -93,7 +92,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
       badge: "AOV",
       icon: ReceiptText,
       positive: true,
-      accent: "bg-[#f4f3ff] text-[#7a5af8]",
+      accent: "text-[#7a5af8]",
     },
     {
       label: "Đơn hoàn thành",
@@ -102,7 +101,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
       badge: `${completionRate.toFixed(0)}%`,
       icon: CheckCircle2,
       positive: true,
-      accent: "bg-[#ecfdf3] text-[#12b76a]",
+      accent: "text-[#12b76a]",
     },
   ];
 
@@ -126,7 +125,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
           return (
             <article className="rounded-2xl border border-[#eaecf0] bg-white p-5 shadow-[0_1px_2px_rgba(16,24,40,0.03)]" key={card.label}>
               <div className="flex items-center justify-between">
-                <span className={`grid size-12 place-items-center rounded-xl ${card.accent}`}><Icon className="size-6" /></span>
+                <Icon className={`size-8 ${card.accent}`} strokeWidth={1.8} />
                 <button className="grid size-8 place-items-center rounded-lg text-[#98a2b3] hover:bg-[#f2f4f7]" type="button"><MoreHorizontal className="size-5" /></button>
               </div>
               <p className="mt-5 text-sm font-medium text-[#667085]">{card.label}</p>
@@ -145,14 +144,8 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.75fr)]">
         <section className="overflow-hidden rounded-2xl border border-[#eaecf0] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.03)]">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#eaecf0] px-5 py-5 sm:px-6">
-            <div>
-              <h2 className="text-lg font-semibold text-[#101828]">Tổng quan doanh thu</h2>
-              <p className="mt-1 text-sm text-[#667085]">Doanh thu từ đơn đã thanh toán hoặc hoàn thành.</p>
-            </div>
-            <div className="flex rounded-lg bg-[#f2f4f7] p-1 text-xs font-semibold">
-              <span className="rounded-md bg-white px-3 py-1.5 text-[#344054] shadow-sm">7 ngày</span>
-              <span className="px-3 py-1.5 text-[#98a2b3]">Tháng</span>
-            </div>
+            <h2 className="text-lg font-semibold text-[#101828]">Tổng quan doanh thu</h2>
+            <span className="rounded-lg bg-[#f2f4f7] px-3 py-2 text-xs font-semibold text-[#344054]">7 ngày</span>
           </div>
 
           <div className="px-3 pb-5 pt-6 sm:px-6">
@@ -291,7 +284,7 @@ export default function AdminOverview({ stats, loading, onOpenOrders }: Props) {
               return (
                 <button className="block w-full text-left" key={item.status} onClick={() => onOpenOrders(item.status)} type="button">
                   <span className="flex items-center gap-3">
-                    <span className="grid size-9 place-items-center rounded-lg" style={{ color: item.color, background: item.background }}><Icon className="size-4" /></span>
+                    <span className="grid size-10 shrink-0 place-items-center" style={{ color: item.color }}><Icon className="size-7" strokeWidth={1.8} /></span>
                     <span className="min-w-0 flex-1"><span className="flex items-center justify-between gap-3"><b className="text-sm font-semibold text-[#344054]">{item.label}</b><strong className="text-sm text-[#101828]">{count}</strong></span><span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[#f2f4f7]"><span className="block h-full rounded-full" style={{ width: `${percentage}%`, background: item.color }} /></span></span>
                   </span>
                 </button>

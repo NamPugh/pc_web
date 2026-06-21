@@ -1,8 +1,9 @@
 import {
   ArrowLeft,
+  BadgeCheck,
+  Ban,
   CalendarDays,
   Check,
-  CheckCircle2,
   ClipboardList,
   Clock3,
   CreditCard,
@@ -30,10 +31,10 @@ const currency = new Intl.NumberFormat("vi-VN", {
 
 const orderStatusMap: Record<Order["orderStatus"], { label: string; tone: string; icon: typeof Clock3 }> = {
   pending: { label: "Chờ xác nhận", tone: "bg-[#fff7ed] text-[#c2410c]", icon: Clock3 },
-  confirmed: { label: "Đã xác nhận", tone: "bg-[#eff6ff] text-[#2563eb]", icon: CheckCircle2 },
-  shipping: { label: "Đang giao hàng", tone: "bg-[#eef4ff] text-[#3278f6]", icon: Truck },
-  completed: { label: "Hoàn thành", tone: "bg-[#ecfdf3] text-[#15803d]", icon: PackageCheck },
-  cancelled: { label: "Đã hủy", tone: "bg-[#fef2f2] text-[#dc2626]", icon: XCircle },
+  confirmed: { label: "Đã xác nhận", tone: "bg-[#ecf3ff] text-[#465fff]", icon: BadgeCheck },
+  shipping: { label: "Đang giao hàng", tone: "bg-[#f4f3ff] text-[#7a5af8]", icon: Truck },
+  completed: { label: "Hoàn thành", tone: "bg-[#ecfdf3] text-[#12b76a]", icon: PackageCheck },
+  cancelled: { label: "Đã hủy", tone: "bg-[#fef3f2] text-[#f04438]", icon: Ban },
 };
 
 const paymentLabels: Record<Order["paymentMethod"], string> = {
@@ -124,12 +125,14 @@ export default function OrdersPage() {
           const Icon = info.icon;
           return (
             <button
-              className={`flex items-center gap-3 border bg-white p-4 text-left transition ${filter === status ? "border-[#3278f6] shadow-[inset_0_-3px_0_#3278f6]" : "border-[#e5e7eb] hover:border-[#9cbcff]"}`}
+               className={`flex items-center gap-3 rounded-xl border bg-white p-4 text-left transition ${filter === status ? "border-[#465fff] shadow-[0_0_0_3px_rgba(70,95,255,0.08)]" : "border-[#eaecf0] hover:border-[#b9c2ff]"}`}
               key={status}
               onClick={() => setFilter(filter === status ? "all" : status)}
               type="button"
             >
-              <span className={`grid size-11 shrink-0 place-items-center ${info.tone}`}><Icon className="size-5" /></span>
+              <span className={`grid size-10 shrink-0 place-items-center ${info.tone.split(" ").find((className) => className.startsWith("text-")) || ""}`}>
+                <Icon className="size-7" strokeWidth={1.8} />
+              </span>
               <span><b className="block text-xl text-[#1d2939]">{statusCounts[status] || 0}</b><small className="font-semibold text-[#667085]">{info.label}</small></span>
             </button>
           );

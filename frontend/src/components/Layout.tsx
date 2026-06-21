@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown, ChevronRight, Cpu, Gamepad2, Headphones, Laptop, LayoutDashboard, LogIn, LogOut, Mail, MapPin, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserPlus, UserRound } from "lucide-react";
+import { Boxes, ChevronDown, ChevronRight, CircleUserRound, ClipboardList, Cpu, Gamepad2, Headphones, Laptop, LayoutGrid, LogIn, LogOut, Mail, MapPin, MapPinned, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserPlus, UserRound } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -50,29 +50,16 @@ const footerGroups = [
   {
     title: "Thông Tin Chung",
     items: [
-      { label: "Tin Tức", href: "/news" },
       { label: "Tài khoản", href: "/account" },
-      { label: "Liên Hệ", href: "/support" },
-      { label: "Ý Kiến Khách Hàng", href: "/support" },
-    ],
-  },
-  {
-    title: "Chính Sách",
-    items: [
-      { label: "Vận Chuyển", href: "/support" },
-      { label: "Bảo Hành", href: "/support" },
-      { label: "Đổi Trả", href: "/support" },
-      { label: "Quy Định Chung", href: "/support" },
     ],
   },
   {
     title: "Hỗ Trợ Nhanh",
     items: [
       { label: "Build PC", href: "/build-pc" },
-      { label: "Tư Vấn Cấu Hình", href: "/support" },
+      { label: "Tư Vấn Cấu Hình", href: "/build-pc" },
       { label: "Theo Dõi Đơn Hàng", href: "/orders" },
       { label: "Thanh Toán", href: "/cart" },
-      { label: "Câu Hỏi Thường Gặp", href: "/support" },
     ],
   },
 ];
@@ -160,11 +147,13 @@ export default function Layout() {
     setSelectedCategoryId(categoryId);
     setCategoryMenuOpen(false);
     const params = new URLSearchParams();
-    const trimmedKeyword = keyword.trim();
-    if (trimmedKeyword) params.set("keyword", trimmedKeyword);
     if (category) {
+      setKeyword("");
       params.set("category", category._id);
       params.set("categoryName", category.name);
+    } else {
+      const trimmedKeyword = keyword.trim();
+      if (trimmedKeyword) params.set("keyword", trimmedKeyword);
     }
     navigate(params.size ? `/?${params.toString()}` : "/");
   };
@@ -176,7 +165,7 @@ export default function Layout() {
       <header className="sticky top-0 z-30 bg-[#29324e] shadow-[0_2px_8px_rgba(41,50,78,0.18)]">
         <div className="bg-[#3278f6] text-white">
           <div className="mx-auto flex h-10 max-w-[1600px] items-center justify-between px-4 text-[13px] font-bold">
-            <Link className="transition hover:text-[#fbff32]" to="/">Tất cả sản phẩm</Link>
+            <Link className="transition hover:text-[#fbff32]" to="/?all=1">Tất cả sản phẩm</Link>
             <div className="flex items-center divide-x divide-white/25">
               <a className="inline-flex items-center gap-2 px-4 transition hover:text-[#fbff32]" href={`tel:${siteSetting.phone.replace(/\s+/g, "")}`}>
                 <Phone className="size-4" />
@@ -255,46 +244,45 @@ export default function Layout() {
                 </Link>
 
                 <div className={`invisible absolute right-0 top-full z-50 translate-y-2 pt-2 opacity-0 transition duration-200 group-hover/account:visible group-hover/account:translate-y-0 group-hover/account:opacity-100 ${ready && user ? "w-64" : "w-52"}`}>
-                  <div className="overflow-hidden rounded-lg border border-[#e4e7ec] bg-white text-[#29324e] shadow-[0_14px_32px_rgba(16,24,40,0.16)]">
+                  <div className="overflow-hidden rounded-xl border border-[#eaecf0] bg-white text-[#344054] shadow-[0_18px_45px_rgba(16,24,40,0.16)]">
                     {!ready ? (
                       <div className="px-3 py-4 text-center text-sm text-[#8d94ac]">Đang tải tài khoản...</div>
                     ) : user ? (
                       <>
-                        <div className="border-b border-[#eef0f4] bg-white px-3 py-3">
+                        <div className="px-4 pb-2 pt-3">
                           <div className="flex items-center gap-3">
-                            <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-[#eef4ff] text-sm font-bold uppercase text-[#3278f6]">{user.userName.slice(0, 1)}</span>
+                            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-[#465fff] text-sm font-bold uppercase text-white">{user.userName.slice(0, 1)}</span>
                             <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-bold text-[#29324e]">{user.userName}</p>
-                              <p className="mt-0.5 truncate text-[11px] text-[#8d94ac]">{user.email}</p>
+                              <p className="truncate text-sm font-semibold text-[#344054]">{user.userName}</p>
+                              <p className="mt-0.5 truncate text-xs text-[#98a2b3]">{user.email}</p>
                             </div>
-                            <span className={`shrink-0 rounded px-1.5 py-1 text-[8px] font-bold uppercase ${user.role === "admin" ? "bg-[#eef4ff] text-[#3278f6]" : "bg-[#f2f4f7] text-[#667085]"}`}>
+                            <span className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-bold uppercase ${user.role === "admin" ? "bg-[#ecf3ff] text-[#465fff]" : "bg-[#f2f4f7] text-[#667085]"}`}>
                               {user.role === "admin" ? "Admin" : "Thành viên"}
                             </span>
                           </div>
                         </div>
-                        <div className="p-2">
-                          <p className="px-2 pb-1 pt-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#98a2b3]">Tài khoản của tôi</p>
-                          <Link className="group flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] font-semibold transition hover:bg-[#f5f8ff] hover:text-[#3278f6]" to="/account">
-                            <span className="grid size-7 place-items-center rounded-md bg-[#f5f6f8] text-[#667085] transition group-hover:text-[#3278f6]"><UserRound className="size-3.5" /></span>
+                        <div className="px-2.5 pb-2.5 pt-0">
+                          <Link className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition hover:bg-[#f2f4f7] hover:text-[#465fff]" to="/account">
+                            <CircleUserRound className="size-[18px] shrink-0 text-[#667085] transition group-hover:text-[#465fff]" strokeWidth={1.8} />
                             Thông tin tài khoản
                           </Link>
-                          <Link className="group flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] font-semibold transition hover:bg-[#f5f8ff] hover:text-[#3278f6]" to="/orders">
-                            <span className="grid size-7 place-items-center rounded-md bg-[#f5f6f8] text-[#667085] transition group-hover:text-[#3278f6]"><PackageCheck className="size-3.5" /></span>
+                          <Link className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition hover:bg-[#f2f4f7] hover:text-[#465fff]" to="/orders">
+                            <ClipboardList className="size-[18px] shrink-0 text-[#667085] transition group-hover:text-[#465fff]" strokeWidth={1.8} />
                             Đơn hàng của tôi
                           </Link>
-                          <Link className="group flex items-center gap-2.5 rounded-md px-2 py-2 text-[13px] font-semibold transition hover:bg-[#f5f8ff] hover:text-[#3278f6]" to="/account#shipping-address">
-                            <span className="grid size-7 place-items-center rounded-md bg-[#f5f6f8] text-[#667085] transition group-hover:text-[#3278f6]"><MapPin className="size-3.5" /></span>
+                          <Link className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold transition hover:bg-[#f2f4f7] hover:text-[#465fff]" to="/account#shipping-address">
+                            <MapPinned className="size-[18px] shrink-0 text-[#667085] transition group-hover:text-[#465fff]" strokeWidth={1.8} />
                             Địa chỉ nhận hàng
                           </Link>
                           {user.role === "admin" ? (
-                            <Link className="group mt-1 flex items-center gap-2.5 rounded-md px-2 py-2.5 text-[13px] font-bold text-[#3278f6] transition hover:bg-[#f5f8ff]" to="/admin">
-                              <span className="grid size-7 place-items-center rounded-md bg-[#eef4ff]"><LayoutDashboard className="size-3.5" /></span>
+                            <Link className="group flex items-center gap-3 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-[#465fff] transition hover:bg-[#f5f7ff]" to="/admin">
+                              <LayoutGrid className="size-[18px] shrink-0" strokeWidth={1.8} />
                               Quản lý hệ thống
-                              <ChevronRight className="ml-auto size-3.5" />
+                              <ChevronRight className="ml-auto size-4" />
                             </Link>
                           ) : null}
-                          <button className="mt-1 flex w-full items-center gap-2.5 rounded-md px-2 py-2.5 text-left text-[13px] font-semibold text-[#dc2626] transition hover:bg-[#fef2f2]" onClick={() => void handleSignOut()} type="button">
-                            <span className="grid size-7 place-items-center rounded-md bg-[#fef2f2]"><LogOut className="size-3.5" /></span>
+                          <button className="flex w-full items-center gap-3 rounded-lg px-2.5 py-2 text-left text-[13px] font-semibold text-[#d92d20] transition hover:bg-[#fef3f2]" onClick={() => void handleSignOut()} type="button">
+                            <LogOut className="size-[18px] shrink-0" strokeWidth={1.8} />
                             Đăng xuất
                           </button>
                         </div>
@@ -325,8 +313,7 @@ export default function Layout() {
               <NavLink
                 to="/cart"
                 className={({ isActive }) =>
-                  `relative ml-1 inline-flex h-11 items-center gap-2 border border-white/20 px-2 text-sm font-bold transition sm:ml-3 sm:px-3 ${
-                    isActive ? "bg-[#3278f6] text-white" : "bg-white/5 text-white hover:bg-white/10"
+                  `relative ml-1 inline-flex h-11 items-center gap-2 border border-white/20 px-2 text-sm font-bold transition sm:ml-3 sm:px-3 ${isActive ? "bg-[#3278f6] text-white" : "bg-white/5 text-white hover:bg-white/10"
                   }`
                 }
               >
@@ -380,9 +367,8 @@ export default function Layout() {
                   <Link
                     key={item.to}
                     to={item.to}
-                    className={`group/nav relative inline-flex h-11 shrink-0 items-center overflow-hidden px-3 text-[13px] font-bold text-white transition-all duration-300 after:absolute after:inset-x-2 after:bottom-0 after:h-[3px] after:origin-left after:scale-x-0 after:bg-white after:transition-transform after:duration-300 hover:-translate-y-px hover:bg-white/10 hover:text-white hover:after:scale-x-100 ${
-                      isActive ? "bg-white/10 text-white after:scale-x-100" : ""
-                    }`}
+                    className={`group/nav relative inline-flex h-11 shrink-0 items-center overflow-hidden px-3 text-[13px] font-bold text-white transition-all duration-300 after:absolute after:inset-x-2 after:bottom-0 after:h-[3px] after:origin-left after:scale-x-0 after:bg-white after:transition-transform after:duration-300 hover:-translate-y-px hover:bg-white/10 hover:text-white hover:after:scale-x-100 ${isActive ? "bg-white/10 text-white after:scale-x-100" : ""
+                      }`}
                   >
                     <span className="relative transition-transform duration-300 group-hover/nav:-translate-y-px">{item.label}</span>
                   </Link>
@@ -397,59 +383,43 @@ export default function Layout() {
       </main>
       {location.pathname !== "/cart" && location.pathname !== "/build-pc" && location.pathname !== "/account" && location.pathname !== "/orders" && !location.pathname.startsWith("/products/") ? (
       <footer className="mt-8 bg-[#29324e] text-white">
-        <div className="bg-[#3278f6]">
-          <div className="mx-auto flex max-w-[1400px] flex-col gap-4 px-4 py-6 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto grid max-w-[1400px] gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(3,1fr)]">
             <div>
-              <h2 className="text-lg font-bold">{siteSetting.newsletterTitle}</h2>
-              <p className="mt-1 text-sm text-white/75">{siteSetting.newsletterDescription}</p>
-            </div>
-            <form className="flex h-11 w-full max-w-md overflow-hidden rounded-lg bg-white shadow-sm" onSubmit={(event) => event.preventDefault()}>
-              <Mail className="ml-4 size-4 shrink-0 self-center text-[#98a2b3]" />
-              <input className="min-w-0 flex-1 px-3 text-sm text-[#29324e] outline-none placeholder:text-[#98a2b3]" placeholder="Nhập email của bạn" type="email" />
-              <button className="m-1 rounded-md bg-[#29324e] px-5 text-sm font-bold text-white transition hover:bg-[#1f2740]" type="submit">Đăng ký</button>
-            </form>
-          </div>
-        </div>
-
-        <div className="mx-auto grid max-w-[1400px] gap-8 px-4 py-10 sm:grid-cols-2 lg:grid-cols-[1.5fr_repeat(4,1fr)]">
-          <div>
             <Link to="/" className="inline-flex items-center gap-3 text-xl font-bold tracking-tight">
-              <span className="grid size-11 place-items-center rounded-lg bg-[#3278f6] font-black text-white">PC</span>
               {siteSetting.footerTitle}
             </Link>
-            <p className="mt-4 max-w-sm text-sm leading-6 text-white/65">{siteSetting.footerDescription}</p>
-            <div className="mt-5 space-y-3 text-sm text-white/70">
-              <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-[#6fa0ff]" /><span>Showroom: {siteSetting.showroomAddress}</span></p>
-              <a className="flex items-center gap-3 transition hover:text-white" href={`tel:${siteSetting.phone.replace(/\s+/g, "")}`}><Phone className="size-4 shrink-0 text-[#6fa0ff]" />{siteSetting.phone}</a>
-              <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-[#6fa0ff]" /><span>Bảo hành: {siteSetting.warrantyAddress}</span></p>
-              <a className="flex items-center gap-3 transition hover:text-white" href={`mailto:${siteSetting.email}`}><Mail className="size-4 shrink-0 text-[#6fa0ff]" />{siteSetting.email}</a>
+              <p className="mt-4 max-w-sm text-sm leading-6 text-white/65">{siteSetting.footerDescription}</p>
+              <div className="mt-5 space-y-3 text-sm text-white/70">
+                <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-[#6fa0ff]" /><span>Showroom: {siteSetting.showroomAddress}</span></p>
+                <a className="flex items-center gap-3 transition hover:text-white" href={`tel:${siteSetting.phone.replace(/\s+/g, "")}`}><Phone className="size-4 shrink-0 text-[#6fa0ff]" />{siteSetting.phone}</a>
+                <p className="flex items-start gap-3"><MapPin className="mt-0.5 size-4 shrink-0 text-[#6fa0ff]" /><span>Bảo hành: {siteSetting.warrantyAddress}</span></p>
+                <a className="flex items-center gap-3 transition hover:text-white" href={`mailto:${siteSetting.email}`}><Mail className="size-4 shrink-0 text-[#6fa0ff]" />{siteSetting.email}</a>
+              </div>
             </div>
-          </div>
 
-          {footerGroups.map((group) => (
-            <div key={group.title}>
-              <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-white">{group.title}</h2>
-              <ul className="space-y-3 text-sm text-white/60">
-                {group.items.map((item) => (
-                  <li key={item.label}>
+            {footerGroups.map((group) => (
+              <div key={group.title}>
+                <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.16em] text-white">{group.title}</h2>
+                <ul className="space-y-3 text-sm text-white/60">
+                  {group.items.map((item) => (
+                    <li key={item.label}>
                     <Link className="inline-flex items-center gap-2 transition hover:translate-x-1 hover:text-white" to={item.href}>
-                      <span className="size-1 rounded-full bg-[#3278f6]" />
                       {item.label}
                     </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="border-t border-white/10 bg-[#242c45]">
-          <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-4 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
-            <span>{siteSetting.copyright}</span>
-            <span>PC Gaming · Laptop · Linh kiện máy tính · Gaming Gear</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
           </div>
-        </div>
-      </footer>
+
+          <div className="border-t border-white/10 bg-[#242c45]">
+            <div className="mx-auto flex max-w-[1400px] flex-col gap-2 px-4 py-4 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+              <span>{siteSetting.copyright}</span>
+              <span>PC Gaming · Laptop · Linh kiện máy tính · Gaming Gear</span>
+            </div>
+          </div>
+        </footer>
       ) : null}
     </div>
   );

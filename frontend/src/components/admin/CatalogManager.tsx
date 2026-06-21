@@ -1,4 +1,4 @@
-import { Boxes, Check, LoaderCircle, Layers3, Pencil, Plus, Search, Trash2, UsersRound, X } from "lucide-react";
+import { Check, Grid2X2, LoaderCircle, Package, Pencil, Plus, Search, Tags, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
@@ -326,14 +326,14 @@ export default function CatalogManager() {
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-3">
         {[
-          { label: "Sản phẩm", value: products.length, icon: Boxes, tone: "bg-[#eef4ff] text-[#3278f6]" },
-          { label: "Danh mục", value: categories.length, icon: Layers3, tone: "bg-[#f0fdf4] text-[#16a34a]" },
-          { label: "Thương hiệu", value: brands.length, icon: UsersRound, tone: "bg-[#f5f3ff] text-[#7c3aed]" },
+          { label: "Sản phẩm", value: products.length, icon: Package },
+          { label: "Danh mục", value: categories.length, icon: Grid2X2 },
+          { label: "Thương hiệu", value: brands.length, icon: Tags },
         ].map((item) => {
           const Icon = item.icon;
           return (
             <article className="flex items-center gap-4 border border-[#e5e7eb] bg-white p-5" key={item.label}>
-              <span className={`grid size-12 place-items-center rounded-lg ${item.tone}`}><Icon className="size-5" /></span>
+              <Icon className="size-8 shrink-0 text-[#465fff]" strokeWidth={1.8} />
               <div><p className="text-sm font-semibold text-[#667085]">{item.label}</p><p className="mt-1 text-2xl font-black text-[#1d2939]">{item.value}</p></div>
             </article>
           );
@@ -503,7 +503,7 @@ export default function CatalogManager() {
 
       <div className="grid gap-5 lg:grid-cols-2">
         <form className="border border-[#e5e7eb] bg-white p-5" onSubmit={createCategory}>
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#f0fdf4] text-[#16a34a]"><Layers3 className="size-5" /></span><div><h3 className="font-bold text-[#1d2939]">Thêm danh mục</h3><p className="text-sm text-[#8d94ac]">Nhóm sản phẩm theo loại.</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#eef4ff] text-[#465fff]"><Grid2X2 className="size-5" strokeWidth={1.8} /></span><div><h3 className="font-bold text-[#1d2939]">Thêm danh mục</h3><p className="text-sm text-[#8d94ac]">Nhóm sản phẩm theo loại.</p></div></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <input className="h-11 border border-[#d0d5dd] px-3 text-sm" placeholder="Tên danh mục" required value={categoryName} onChange={(event) => setCategoryName(event.target.value)} />
             <input className="h-11 border border-[#d0d5dd] px-3 text-sm" placeholder="URL ảnh (tùy chọn)" value={categoryImage} onChange={(event) => setCategoryImage(event.target.value)} />
@@ -511,7 +511,7 @@ export default function CatalogManager() {
           </div>
         </form>
         <form className="border border-[#e5e7eb] bg-white p-5" onSubmit={createBrand}>
-          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#f5f3ff] text-[#7c3aed]"><UsersRound className="size-5" /></span><div><h3 className="font-bold text-[#1d2939]">Thêm thương hiệu</h3><p className="text-sm text-[#8d94ac]">Bổ sung hãng sản xuất.</p></div></div>
+          <div className="flex items-center gap-3"><span className="grid size-10 place-items-center rounded-lg bg-[#eef4ff] text-[#465fff]"><Tags className="size-5" strokeWidth={1.8} /></span><div><h3 className="font-bold text-[#1d2939]">Thêm thương hiệu</h3><p className="text-sm text-[#8d94ac]">Bổ sung hãng sản xuất.</p></div></div>
           <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
             <input className="h-11 border border-[#d0d5dd] px-3 text-sm" placeholder="Tên thương hiệu" required value={brandName} onChange={(event) => setBrandName(event.target.value)} />
             <input className="h-11 border border-[#d0d5dd] px-3 text-sm" placeholder="URL logo (tùy chọn)" value={brandLogo} onChange={(event) => setBrandLogo(event.target.value)} />

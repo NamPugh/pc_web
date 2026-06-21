@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, News, Order, OrderStats, Product, ProductType, Review, SiteSetting, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, Order, OrderStats, Product, ProductType, Review, SiteSetting, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -84,11 +84,6 @@ export const reviewApi = {
   create: (productId: string, payload: { rating: number; comment: string }) =>
     api.post<ApiItem<Review>>(`/reviews/product/${productId}`, payload),
   remove: (id: string) => api.delete(`/reviews/${id}`),
-};
-
-export const newsApi = {
-  list: (params?: { status?: string; keyword?: string }) => api.get<ApiList<News>>("/news", { params }),
-  bySlug: (slug: string) => api.get<ApiItem<News>>(`/news/slug/${slug}`),
 };
 
 export const flashSaleApi = {

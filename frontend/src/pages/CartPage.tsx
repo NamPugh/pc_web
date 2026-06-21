@@ -206,13 +206,7 @@ export default function CartPage() {
     <section className="space-y-5 py-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#3278f6]">Giỏ hàng của bạn</p>
-          <h1 className="mt-1 text-3xl font-black tracking-tight text-[#29324e]">
-            Chọn sản phẩm để thanh toán
-          </h1>
-          <p className="mt-2 text-sm text-[#667085]">
-            Bạn có thể mua một phần và giữ lại các sản phẩm khác cho lần sau.
-          </p>
+          <h1 className="text-3xl font-black tracking-tight text-[#29324e]">Giỏ hàng của bạn</h1>
         </div>
         <Link className="inline-flex items-center gap-2 text-sm font-bold text-[#3278f6] hover:text-[#2860c5]" to="/">
           <ArrowLeft className="size-4" />

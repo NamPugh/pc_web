@@ -14,8 +14,8 @@ import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { catalogApi, flashSaleApi, getErrorMessage, newsApi } from "@/api/client";
-import type { Banner, Brand, FlashSale, FlashSaleItem, HomeSection, News, Product, ProductType } from "@/types";
+import { catalogApi, flashSaleApi, getErrorMessage } from "@/api/client";
+import type { Banner, Brand, Category, FlashSale, FlashSaleItem, HomeSection, Product, ProductType } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" });
 
@@ -155,80 +155,81 @@ function FilterGroup({ children, title }: { children: ReactNode; title: string }
   );
 }
 
-function SearchResults({ keyword, loading, products }: { keyword: string; loading: boolean; products: Product[] }) {
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+function SearchResults({
+  brands,
+  categories,
+  categoryId,
+  keyword,
+  showAll = false,
+  title,
+}: {
+  brands: Brand[];
+  categories: Category[];
+  categoryId?: string;
+  keyword: string;
+  showAll?: boolean;
+  title: string;
+}) {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(categoryId ? [categoryId] : []);
   const [selectedBrands, setSelectedBrands] = useState<string[]>([]);
   const [selectedRanges, setSelectedRanges] = useState<string[]>([]);
   const [selectedTypes, setSelectedTypes] = useState<ProductType[]>([]);
   const [sort, setSort] = useState("default");
+  const [page, setPage] = useState(1);
 
-  const categoryOptions = useMemo(() => {
-    const values = new Map<string, { id: string; name: string; count: number }>();
-    products.forEach((product) => {
-      if (!product.category) return;
-      const current = values.get(product.category._id);
-      values.set(product.category._id, {
-        id: product.category._id,
-        name: product.category.name,
-        count: (current?.count || 0) + 1,
-      });
+  const pageSize = 20;
+
+  useEffect(() => {
+    let active = true;
+    void catalogApi.products({
+      keyword: keyword || undefined,
+      category: selectedCategories.length ? selectedCategories.join(",") : undefined,
+      brand: selectedBrands.length ? selectedBrands.join(",") : undefined,
+      productType: selectedTypes.length ? selectedTypes.join(",") : undefined,
+      priceRanges: selectedRanges.length ? selectedRanges.join(",") : undefined,
+      sort: sort === "default" ? "created_desc" : sort,
+      status: "active",
+      page,
+      limit: pageSize,
+    }).then(({ data }) => {
+      if (!active) return;
+      setProducts(data.data);
+      setTotal(data.total || 0);
+      setTotalPages(Math.max(data.totalPages || 1, 1));
+    }).catch((error: unknown) => {
+      if (active) toast.error(getErrorMessage(error));
+    }).finally(() => {
+      if (active) setLoading(false);
     });
-    return [...values.values()].sort((a, b) => b.count - a.count);
-  }, [products]);
-
-  const brandOptions = useMemo(() => {
-    const values = new Map<string, { id: string; name: string; count: number }>();
-    products.forEach((product) => {
-      if (!product.brand) return;
-      const current = values.get(product.brand._id);
-      values.set(product.brand._id, {
-        id: product.brand._id,
-        name: product.brand.name,
-        count: (current?.count || 0) + 1,
-      });
-    });
-    return [...values.values()].sort((a, b) => b.count - a.count);
-  }, [products]);
-
-  const typeOptions = useMemo(() => {
-    const counts = new Map<ProductType, number>();
-    products.forEach((product) => counts.set(product.productType, (counts.get(product.productType) || 0) + 1));
-    return [...counts.entries()]
-      .map(([id, count]) => ({ id, name: productTypeLabels[id] || id.toUpperCase(), count }))
-      .sort((a, b) => b.count - a.count);
-  }, [products]);
-
-  const visibleProducts = useMemo(() => {
-    const filtered = products.filter((product) => {
-      if (selectedCategories.length && (!product.category || !selectedCategories.includes(product.category._id))) return false;
-      if (selectedBrands.length && (!product.brand || !selectedBrands.includes(product.brand._id))) return false;
-      if (selectedTypes.length && !selectedTypes.includes(product.productType)) return false;
-      if (selectedRanges.length && !selectedRanges.some((rangeId) => {
-        const range = priceRanges.find((item) => item.id === rangeId);
-        return range ? product.price >= range.min && product.price < range.max : true;
-      })) return false;
-      return true;
-    });
-
-    return [...filtered].sort((a, b) => {
-      if (sort === "price_asc") return a.price - b.price;
-      if (sort === "price_desc") return b.price - a.price;
-      if (sort === "rating_desc") return (b.ratingAverage || 0) - (a.ratingAverage || 0);
-      if (sort === "sold_desc") return (b.sold || 0) - (a.sold || 0);
-      return 0;
-    });
-  }, [products, selectedBrands, selectedCategories, selectedRanges, selectedTypes, sort]);
+    return () => {
+      active = false;
+    };
+  }, [keyword, page, selectedBrands, selectedCategories, selectedRanges, selectedTypes, sort]);
 
   const toggleValue = <T extends string>(values: T[], value: T, setter: (next: T[]) => void) => {
+    setLoading(true);
     setter(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+    setPage(1);
   };
 
   const clearFilters = () => {
+    setLoading(true);
     setSelectedCategories([]);
     setSelectedBrands([]);
     setSelectedRanges([]);
     setSelectedTypes([]);
     setSort("default");
+    setPage(1);
+  };
+
+  const changePage = (nextPage: number) => {
+    setLoading(true);
+    setPage(Math.min(Math.max(nextPage, 1), totalPages));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const hasFilters = selectedCategories.length + selectedBrands.length + selectedRanges.length + selectedTypes.length > 0;
@@ -238,64 +239,60 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
       <div className="grid items-start gap-5 lg:grid-cols-[290px_minmax(0,1fr)]">
         <aside className="border border-[#e5e7eb] bg-white px-5 lg:sticky lg:top-40">
           <div className="flex items-center justify-between border-b border-[#d8dce3] py-5">
-            <h2 className="text-xl font-bold leading-[1.35] tracking-normal text-[#1d2939]">Bộ lọc sản phẩm</h2>
+            <h2 className="text-xl font-bold leading-[1.35] tracking-normal text-[#1d2939]">{showAll ? "Danh mục sản phẩm" : "Bộ lọc sản phẩm"}</h2>
             {hasFilters ? <button className="text-[#3278f6]" onClick={clearFilters} title="Xóa bộ lọc" type="button"><RotateCcw className="size-4" /></button> : null}
           </div>
 
           <FilterGroup title="Danh mục">
-            {categoryOptions.map((option) => (
-               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
-                <input checked={selectedCategories.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedCategories, option.id, setSelectedCategories)} type="checkbox" />
-                <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+            {categories.map((option) => (
+               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option._id}>
+                <input checked={selectedCategories.includes(option._id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedCategories, option._id, setSelectedCategories)} type="checkbox" />
+                <span className="min-w-0 flex-1 truncate">{option.name}</span>
               </label>
             ))}
           </FilterGroup>
 
-          {brandOptions.length ? (
+          {!showAll && brands.length ? (
             <FilterGroup title="Hãng sản xuất">
-              {brandOptions.map((option) => (
-                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
-                  <input checked={selectedBrands.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedBrands, option.id, setSelectedBrands)} type="checkbox" />
-                  <span className="min-w-0 flex-1 truncate">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+              {brands.map((option) => (
+                 <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option._id}>
+                  <input checked={selectedBrands.includes(option._id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedBrands, option._id, setSelectedBrands)} type="checkbox" />
+                  <span className="min-w-0 flex-1 truncate">{option.name}</span>
                 </label>
               ))}
             </FilterGroup>
           ) : null}
 
-          <FilterGroup title="Khoảng giá (VNĐ)">
-            {priceRanges.map((range) => {
-              const count = products.filter((product) => product.price >= range.min && product.price < range.max).length;
-              if (!count) return null;
-              return (
+          {!showAll ? <FilterGroup title="Khoảng giá (VNĐ)">
+            {priceRanges.map((range) => (
                  <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={range.id}>
                   <input checked={selectedRanges.includes(range.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedRanges, range.id, setSelectedRanges)} type="checkbox" />
-                  <span className="min-w-0 flex-1">{range.label}</span><span className="text-xs text-[#98a2b3]">[{count}]</span>
+                  <span className="min-w-0 flex-1">{range.label}</span>
                 </label>
-              );
-            })}
-          </FilterGroup>
+            ))}
+          </FilterGroup> : null}
 
-          <FilterGroup title="Loại sản phẩm">
-            {typeOptions.map((option) => (
-               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={option.id}>
-                <input checked={selectedTypes.includes(option.id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedTypes, option.id, setSelectedTypes)} type="checkbox" />
-                <span className="min-w-0 flex-1">{option.name}</span><span className="text-xs text-[#98a2b3]">[{option.count}]</span>
+          {!showAll ? <FilterGroup title="Loại sản phẩm">
+            {(Object.entries(productTypeLabels) as Array<[ProductType, string]>).map(([id, name]) => (
+               <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[#344054]" key={id}>
+                <input checked={selectedTypes.includes(id)} className="size-4 accent-[#3278f6]" onChange={() => toggleValue(selectedTypes, id, setSelectedTypes)} type="checkbox" />
+                <span className="min-w-0 flex-1">{name}</span>
               </label>
             ))}
-          </FilterGroup>
+          </FilterGroup> : null}
         </aside>
 
         <div className="min-w-0 border border-[#e5e7eb] bg-white p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] pb-4">
             <h1 className="w-fit border-b-[3px] border-[#3278f6] pb-1 text-2xl font-bold uppercase leading-[1.35] text-black">
-              Kết quả tìm kiếm: &quot;{keyword}&quot;
+              {showAll ? "Tất cả sản phẩm" : <>Kết quả tìm kiếm: &quot;{title}&quot;</>}
             </h1>
             <div className="flex items-center gap-3 text-sm text-[#8d94ac]">
-              {!loading ? <span>{visibleProducts.length} sản phẩm</span> : null}
+              {!loading ? <span>{total} sản phẩm</span> : null}
               <span className="h-6 w-px bg-[#d0d5dd]" />
               <div className="flex items-center gap-2">
                 <span className="hidden sm:inline">Hiển thị theo:</span>
-                <Select.Root onValueChange={setSort} value={sort}>
+                <Select.Root onValueChange={(value) => { setLoading(true); setSort(value); setPage(1); }} value={sort}>
                   <Select.Trigger className="inline-flex h-10 min-w-36 items-center justify-between gap-3 rounded border border-[#d0d5dd] bg-white px-3 font-bold text-[#344054] outline-none transition hover:border-[#9cbcff] focus:border-[#3278f6] focus:ring-2 focus:ring-[#3278f6]/10">
                     <Select.Value />
                     <Select.Icon><ChevronDown className="size-4 text-[#667085]" /></Select.Icon>
@@ -325,7 +322,7 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
 
           {loading ? (
             <div className="p-14 text-center text-[#8d94ac]">Đang tìm sản phẩm...</div>
-          ) : visibleProducts.length === 0 ? (
+          ) : products.length === 0 ? (
             <div className="mt-5 border border-dashed border-[#d0d5dd] p-14 text-center">
               <Search className="mx-auto size-9 text-[#98a2b3]" />
               <h2 className="mt-3 font-bold text-[#344054]">Không có sản phẩm phù hợp bộ lọc</h2>
@@ -333,9 +330,47 @@ function SearchResults({ keyword, loading, products }: { keyword: string; loadin
             </div>
           ) : (
             <div className="mt-5 grid gap-px bg-[#e5e7eb] sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-              {visibleProducts.map((product) => <ProductCard compact key={product._id} product={product} />)}
+              {products.map((product) => <ProductCard compact key={product._id} product={product} />)}
             </div>
           )}
+
+          {!loading && total > pageSize ? (
+            <nav aria-label="Phân trang sản phẩm" className="mt-6 flex flex-wrap items-center justify-center gap-1.5 border-t border-[#e5e7eb] pt-5">
+              <button
+                aria-label="Trang trước"
+                className="grid size-10 place-items-center rounded-lg border border-[#d0d5dd] bg-white text-[#667085] transition hover:border-[#3278f6] hover:text-[#3278f6] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={page === 1}
+                onClick={() => changePage(page - 1)}
+                type="button"
+              >
+                <ChevronLeft className="size-4" />
+              </button>
+              {Array.from({ length: Math.min(totalPages, 7) }, (_, index) => {
+                const start = Math.min(Math.max(page - 3, 1), Math.max(totalPages - 6, 1));
+                const pageNumber = start + index;
+                return (
+                  <button
+                    aria-current={pageNumber === page ? "page" : undefined}
+                    className={`grid size-10 place-items-center rounded-lg text-sm font-bold transition ${pageNumber === page ? "bg-[#3278f6] text-white shadow-[0_5px_14px_rgba(50,120,246,0.25)]" : "border border-[#d0d5dd] bg-white text-[#344054] hover:border-[#3278f6] hover:text-[#3278f6]"}`}
+                    key={pageNumber}
+                    onClick={() => changePage(pageNumber)}
+                    type="button"
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+              <button
+                aria-label="Trang tiếp theo"
+                className="grid size-10 place-items-center rounded-lg border border-[#d0d5dd] bg-white text-[#667085] transition hover:border-[#3278f6] hover:text-[#3278f6] disabled:cursor-not-allowed disabled:opacity-40"
+                disabled={page === totalPages}
+                onClick={() => changePage(page + 1)}
+                type="button"
+              >
+                <ChevronRight className="size-4" />
+              </button>
+            </nav>
+          ) : null}
         </div>
       </div>
     </section>
@@ -456,11 +491,12 @@ export default function HomePage() {
   const searchKeyword = searchParams.get("keyword") || "";
   const searchCategoryId = searchParams.get("category") || "";
   const searchCategoryName = searchParams.get("categoryName") || "";
-  const hasSearchFilter = Boolean(searchKeyword || searchCategoryId);
+  const showAllProducts = searchParams.get("all") === "1";
+  const hasSearchFilter = Boolean(searchKeyword || searchCategoryId || showAllProducts);
   const [products, setProducts] = useState<Product[]>([]);
   const [activeSale, setActiveSale] = useState<FlashSale | null>(null);
   const [brands, setBrands] = useState<Brand[]>([]);
-  const [news, setNews] = useState<News[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [managedBanners, setManagedBanners] = useState<Banner[]>([]);
   const [managedProductSections, setManagedProductSections] = useState<HomeSection[]>([]);
   const [keyword, setKeyword] = useState(searchKeyword);
@@ -482,12 +518,12 @@ export default function HomePage() {
   const params = useMemo(
     () => ({
       keyword: debouncedKeyword || undefined,
-      category: searchCategoryId || undefined,
       brand: brand || undefined,
       sort: "created_desc",
+      status: "active",
       limit: 500,
     }),
-    [brand, debouncedKeyword, searchCategoryId],
+    [brand, debouncedKeyword],
   );
 
   useEffect(() => {
@@ -519,15 +555,15 @@ export default function HomePage() {
   useEffect(() => {
     const loadFilters = async () => {
       try {
-        const [brandRes, newsRes, bannerRes, dealRes, homeSectionRes] = await Promise.all([
+        const [brandRes, categoryRes, bannerRes, dealRes, homeSectionRes] = await Promise.all([
           catalogApi.brands(),
-          newsApi.list({ status: "published" }),
+          catalogApi.categories(),
           catalogApi.banners(),
           flashSaleApi.active(),
           catalogApi.homeSections({ isActive: true }),
         ]);
         setBrands(brandRes.data.data);
-        setNews(newsRes.data.data);
+        setCategories(categoryRes.data.data.filter((category) => category.isActive !== false));
         setManagedBanners(bannerRes.data.data);
         setActiveSale(dealRes.data.data);
         setManagedProductSections(homeSectionRes.data.data);
@@ -540,6 +576,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    if (hasSearchFilter) return;
     const loadProducts = async () => {
       setLoading(true);
       try {
@@ -553,7 +590,7 @@ export default function HomePage() {
     };
 
     void loadProducts();
-  }, [params]);
+  }, [hasSearchFilter, params]);
 
   const dealItems = activeSale?.items.filter((item) => item.sold < item.quantity) || [];
 
@@ -608,7 +645,15 @@ export default function HomePage() {
       </section> : null}
 
       {hasSearchFilter ? (
-        <SearchResults key={`${searchKeyword}-${searchCategoryId}`} keyword={searchKeyword || searchCategoryName || "Danh mục sản phẩm"} loading={loading} products={products} />
+        <SearchResults
+          brands={brands}
+          categories={categories}
+          categoryId={searchCategoryId}
+          key={`${searchKeyword}-${searchCategoryId}-${showAllProducts}`}
+          keyword={searchKeyword}
+          showAll={showAllProducts && !searchKeyword && !searchCategoryId}
+          title={searchKeyword || searchCategoryName || "Danh mục sản phẩm"}
+        />
       ) : null}
 
       {!hasSearchFilter ? <section className="mx-auto max-w-[1600px] bg-white px-2 py-5 sm:px-3">
@@ -713,32 +758,14 @@ export default function HomePage() {
         );
       }) : null}
 
-      <section className="mx-auto grid max-w-[1600px] gap-4 px-3 lg:grid-cols-[1fr_1fr]">
-        <div className="border border-[#ededed] bg-white p-5">
-          <SectionHeader title="Tin tức công nghệ" keyword="Tin tức" />
-          <div className="mt-5 grid gap-3">
-            {news.slice(0, 3).map((item) => (
-              <Link key={item._id} to={`/news/${item.slug}`} className="group grid gap-3 border border-[#ededed] bg-[#f5f5f5] p-3 transition hover:border-[#3278f6] sm:grid-cols-[150px_minmax(0,1fr)]">
-                <img className="aspect-video w-full bg-white object-cover" src={item.thumbnail || "/icons.svg"} alt={item.title} />
-                <div>
-                  <p className="text-xs text-[#8d94ac]">{new Date(item.createdAt).toLocaleDateString("vi-VN")}</p>
-                  <h3 className="mt-1 line-clamp-2 text-sm font-bold text-[#29324e] transition group-hover:text-[#3278f6]">{item.title}</h3>
-                  <p className="mt-2 line-clamp-2 text-sm text-[#444]">{item.summary || item.content}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        <div className="border border-[#ededed] bg-white p-5">
-          <SectionHeader title="Thương hiệu đồng hành" keyword="Brand" />
-          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-            {brands.slice(0, 12).map((item) => (
-              <button key={item._id} className={`flex min-h-14 items-center justify-center border px-3 text-center text-sm font-bold transition ${brand === item._id ? "border-[#3278f6] bg-[#eef4ff] text-[#3278f6]" : "border-[#ededed] bg-[#f5f5f5] text-[#29324e] hover:border-[#3278f6] hover:text-[#3278f6]"}`} onClick={() => setBrand(brand === item._id ? "" : item._id)} type="button">
-                {item.name}
-              </button>
-            ))}
-          </div>
+      <section className="mx-auto w-full max-w-[1600px] border border-[#ededed] bg-white p-5">
+        <SectionHeader title="Thương hiệu đồng hành" keyword="Brand" />
+        <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+          {brands.slice(0, 12).map((item) => (
+            <button key={item._id} className={`flex min-h-14 items-center justify-center border px-3 text-center text-sm font-bold transition ${brand === item._id ? "border-[#3278f6] bg-[#eef4ff] text-[#3278f6]" : "border-[#ededed] bg-[#f5f5f5] text-[#29324e] hover:border-[#3278f6] hover:text-[#3278f6]"}`} onClick={() => setBrand(brand === item._id ? "" : item._id)} type="button">
+              {item.name}
+            </button>
+          ))}
         </div>
       </section>
     </section>

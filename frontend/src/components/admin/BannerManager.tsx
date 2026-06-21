@@ -1,4 +1,4 @@
-import { AlertTriangle, Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, Plus, RotateCcw, Trash2, Upload, X } from "lucide-react";
+import { AlertTriangle, Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, RotateCcw, Trash2, Upload, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
@@ -112,11 +112,6 @@ export default function BannerManager() {
   const resetForm = () => {
     setEditingId("");
     setForm(initialForm);
-  };
-
-  const openNewBanner = () => {
-    resetForm();
-    document.querySelector("#banner-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const editBanner = (banner: Banner) => {
@@ -251,12 +246,10 @@ export default function BannerManager() {
   };
 
   return (
-    <section className="border border-[#ededed] bg-white" id="banner-management">
+    <section className="overflow-hidden rounded-xl border border-[#ededed] bg-white" id="banner-management">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#ededed] px-5 py-4">
         <div>
-          <p className="text-xs font-bold uppercase text-[#3278f6]">Quản lý giao diện</p>
-          <h2 className="mt-1 text-2xl font-bold text-[#29324e]">Banner website</h2>
-          <p className="mt-1 text-sm text-[#8d94ac]">Thêm, sửa, ẩn và sắp xếp banner theo từng vị trí.</p>
+          <h2 className="text-2xl font-bold text-[#29324e]">Banner website</h2>
         </div>
         <div className="flex items-center gap-2">
           <AdminSelect
@@ -268,19 +261,15 @@ export default function BannerManager() {
             value={filter}
             onValueChange={setFilter}
           />
-          <Button className="rounded-none border border-[#3278f6] bg-white text-[#3278f6] hover:bg-[#eef4ff]" disabled={saving} onClick={() => void importDefaultBanners()} type="button">
+          <Button className="rounded-lg border border-[#3278f6] bg-white text-[#3278f6] hover:bg-[#eef4ff]" disabled={saving} onClick={() => void importDefaultBanners()} type="button">
             <ImagePlus className="size-4" />
             Nạp banner mặc định
-          </Button>
-          <Button className="rounded-none bg-[#3278f6] hover:bg-[#2860c5]" onClick={openNewBanner}>
-            <Plus className="size-4" />
-            Banner mới
           </Button>
         </div>
       </div>
 
       <div className="grid items-start gap-6 p-5 xl:grid-cols-[minmax(0,1fr)_390px]">
-        <div className="overflow-x-auto border border-[#ededed]">
+        <div className="overflow-x-auto rounded-xl border border-[#ededed]">
           <div className="min-w-[760px]">
             <div className="grid grid-cols-[150px_minmax(210px,1fr)_150px_70px_110px] bg-[#f5f5f5] px-3 py-3 text-xs font-bold uppercase text-[#8d94ac]">
               <span>Ảnh</span>
@@ -297,7 +286,7 @@ export default function BannerManager() {
               ) : (
                 visibleBanners.map((banner) => (
                   <div className="grid grid-cols-[150px_minmax(210px,1fr)_150px_70px_110px] items-center gap-3 px-3 py-3" key={banner._id}>
-                    <div className="aspect-[16/6] overflow-hidden border border-[#ededed] bg-[#f5f5f5]">
+                    <div className="aspect-[16/6] overflow-hidden rounded-lg border border-[#ededed] bg-[#f5f5f5]">
                       <img className="h-full w-full object-cover" src={banner.image} alt={banner.title} />
                     </div>
                     <div className="min-w-0">
@@ -314,13 +303,13 @@ export default function BannerManager() {
                     </span>
                     <span className="text-sm font-bold text-[#29324e]">{banner.sortOrder ?? 0}</span>
                     <div className="flex justify-end gap-1">
-                      <button className="grid size-9 place-items-center text-[#3278f6] transition hover:bg-[#eef4ff]" onClick={() => editBanner(banner)} title="Sửa banner" type="button">
+                      <button className="grid size-9 place-items-center rounded-lg text-[#3278f6] transition hover:bg-[#eef4ff]" onClick={() => editBanner(banner)} title="Sửa banner" type="button">
                         <Pencil className="size-4" />
                       </button>
-                      <button className="grid size-9 place-items-center text-[#29324e] transition hover:bg-[#f5f5f5]" onClick={() => void toggleBanner(banner)} title={banner.isActive === false ? "Hiện banner" : "Ẩn banner"} type="button">
+                      <button className="grid size-9 place-items-center rounded-lg text-[#29324e] transition hover:bg-[#f5f5f5]" onClick={() => void toggleBanner(banner)} title={banner.isActive === false ? "Hiện banner" : "Ẩn banner"} type="button">
                         {togglingIds.has(banner._id) ? <LoaderCircle className="size-4 animate-spin" /> : banner.isActive === false ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
                       </button>
-                      <button className="grid size-9 place-items-center text-[#fb4e4e] transition hover:bg-[#fff1f1]" onClick={() => setDeleteTarget(banner)} title="Xóa banner" type="button">
+                      <button className="grid size-9 place-items-center rounded-lg text-[#fb4e4e] transition hover:bg-[#fff1f1]" onClick={() => setDeleteTarget(banner)} title="Xóa banner" type="button">
                         <Trash2 className="size-4" />
                       </button>
                     </div>
@@ -331,7 +320,7 @@ export default function BannerManager() {
           </div>
         </div>
 
-        <form className="border border-[#ededed] bg-[#f9fafc] p-5 xl:sticky xl:top-48" id="banner-form" onSubmit={submitBanner}>
+        <form className="rounded-xl border border-[#ededed] bg-[#f9fafc] p-5 xl:sticky xl:top-48" id="banner-form" onSubmit={submitBanner}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <span className="grid size-10 place-items-center bg-[#eef4ff] text-[#3278f6]">
@@ -352,7 +341,7 @@ export default function BannerManager() {
           <div className="mt-5 space-y-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Tên banner</span>
-              <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
+              <input className="h-11 w-full rounded-lg border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} required />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Ảnh banner</span>
@@ -364,7 +353,7 @@ export default function BannerManager() {
                 type="file"
               />
               <button
-                className="mb-2 flex min-h-24 w-full flex-col items-center justify-center border border-dashed border-[#9cbcff] bg-[#f4f8ff] px-4 text-center transition hover:bg-[#eef4ff] disabled:cursor-wait"
+                className="mb-2 flex min-h-24 w-full flex-col items-center justify-center rounded-xl border border-dashed border-[#9cbcff] bg-[#f4f8ff] px-4 text-center transition hover:bg-[#eef4ff] disabled:cursor-wait"
                 disabled={uploading}
                 onClick={() => fileInputRef.current?.click()}
                 type="button"
@@ -373,16 +362,16 @@ export default function BannerManager() {
                 <b className="mt-2 text-sm text-[#3278f6]">{uploading ? "Đang tải ảnh..." : "Chọn ảnh từ máy"}</b>
                 <span className="mt-1 text-xs text-[#8d94ac]">JPG, PNG, WEBP hoặc GIF · tối đa 8 MB</span>
               </button>
-              <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" placeholder="/tnc/hero/banner.jpg hoặc https://..." value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} required />
+              <input className="h-11 w-full rounded-lg border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" placeholder="/tnc/hero/banner.jpg hoặc https://..." value={form.image} onChange={(event) => setForm({ ...form, image: event.target.value })} required />
             </label>
             {form.image ? (
-              <div className="aspect-[16/6] overflow-hidden border border-[#dedede] bg-white">
+              <div className="aspect-[16/6] overflow-hidden rounded-xl border border-[#dedede] bg-white">
                 <img className="h-full w-full object-cover" src={form.image} alt="Xem trước banner" />
               </div>
             ) : null}
             <label className="block">
               <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Liên kết khi bấm</span>
-              <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" placeholder="/?keyword=PC Gaming" value={form.link} onChange={(event) => setForm({ ...form, link: event.target.value })} />
+              <input className="h-11 w-full rounded-lg border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" placeholder="/?keyword=PC Gaming" value={form.link} onChange={(event) => setForm({ ...form, link: event.target.value })} />
             </label>
             <div className="grid grid-cols-[1fr_100px] gap-3">
               <label className="block">
@@ -391,14 +380,14 @@ export default function BannerManager() {
               </label>
               <label className="block">
                 <span className="mb-1.5 block text-sm font-bold text-[#29324e]">Thứ tự</span>
-                <input className="h-11 w-full border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" min="0" type="number" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} />
+                <input className="h-11 w-full rounded-lg border border-[#dedede] bg-white px-3 text-sm outline-none focus:border-[#3278f6]" min="0" type="number" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: event.target.value })} />
               </label>
             </div>
-            <label className="flex items-center gap-3 border border-[#dedede] bg-white px-3 py-3 text-sm font-bold text-[#29324e]">
+            <label className="flex items-center gap-3 rounded-lg border border-[#dedede] bg-white px-3 py-3 text-sm font-bold text-[#29324e]">
               <input checked={form.isActive} className="size-4 accent-[#3278f6]" onChange={(event) => setForm({ ...form, isActive: event.target.checked })} type="checkbox" />
               Hiển thị banner trên website
             </label>
-            <Button className="h-11 w-full rounded-none bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={saving || uploading}>
+            <Button className="h-11 w-full rounded-lg bg-[#3278f6] font-bold hover:bg-[#2860c5]" disabled={saving || uploading}>
               {saving ? "Đang lưu..." : editingId ? "Cập nhật banner" : "Thêm banner"}
             </Button>
           </div>

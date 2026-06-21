@@ -253,9 +253,7 @@ export default function HomeSectionManager() {
       <section className="overflow-hidden rounded-xl border border-[#e5e7eb] bg-white">
         <header className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e5e7eb] p-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[#3278f6]">Giao diện trang chủ</p>
-            <h2 className="mt-1 text-2xl font-black text-[#1d2939]">Danh mục sản phẩm hiển thị</h2>
-            <p className="mt-1 text-sm text-[#8d94ac]">Quản lý banner, sản phẩm, thứ tự và trạng thái của từng khu vực.</p>
+            <h2 className="text-2xl font-black text-[#1d2939]">Danh mục sản phẩm hiển thị</h2>
           </div>
           <div className="flex gap-2">
             <Button className="rounded-none" disabled={saving} onClick={() => void importCurrentSections()} type="button" variant="outline">
