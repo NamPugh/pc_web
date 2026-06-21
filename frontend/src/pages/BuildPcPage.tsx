@@ -10,6 +10,7 @@ import {
   FileSpreadsheet,
   HardDrive,
   Headphones,
+  History,
   Keyboard,
   LoaderCircle,
   MemoryStick,
@@ -33,8 +34,9 @@ import { toast } from "sonner";
 
 import { buildPcApi, getErrorMessage } from "@/api/client";
 import { Button } from "@/components/ui/button";
+import { useAuthStore } from "@/store/auth";
 import { useCartStore } from "@/store/cart";
-import type { Product, ProductType } from "@/types";
+import type { PCBuild, Product, ProductType } from "@/types";
 
 const currency = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -113,6 +115,7 @@ const componentGroups: Array<{
 
 export default function BuildPcPage() {
   const setCart = useCartStore((state) => state.setCart);
+  const user = useAuthStore((state) => state.user);
   const [selected, setSelected] = useState<Partial<Record<ProductType, Product>>>({});
   const [selectorType, setSelectorType] = useState<ProductType | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
@@ -126,6 +129,9 @@ export default function BuildPcPage() {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [savedBuilds, setSavedBuilds] = useState<PCBuild[]>([]);
+  const [loadingBuilds, setLoadingBuilds] = useState(true);
+  const [savedBuildActionId, setSavedBuildActionId] = useState("");
 
   useEffect(() => {
     if (!selectorType) return;
@@ -145,6 +151,22 @@ export default function BuildPcPage() {
       active = false;
     };
   }, [selectorType]);
+
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    void buildPcApi.mine()
+      .then(({ data }) => {
+        if (active) setSavedBuilds(data.data);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (active) setLoadingBuilds(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
 
   const visibleProducts = useMemo(() => {
     const keyword = normalizeSearch(search);
@@ -254,12 +276,52 @@ export default function BuildPcPage() {
     }
     setSaving(true);
     try {
-      await buildPcApi.save(buildPayload());
+      const { data } = await buildPcApi.save(buildPayload());
+      setSavedBuilds((current) => [data.data as PCBuild, ...current]);
       toast.success("Đã lưu cấu hình");
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const restoreBuild = (build: PCBuild) => {
+    const restored = Object.fromEntries(
+      Object.entries(build.components)
+        .filter((entry): entry is [string, { product: Product; quantity: number }] => Boolean(entry[1]?.product))
+        .map(([type, component]) => [type, component.product]),
+    ) as Partial<Record<ProductType, Product>>;
+    setSelected(restored);
+    setName(build.name);
+    setNote(build.note || "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    toast.success("Đã nạp lại cấu hình");
+  };
+
+  const addSavedBuildToCart = async (build: PCBuild) => {
+    setSavedBuildActionId(build._id);
+    try {
+      const { data } = await buildPcApi.addToCart(build._id);
+      setCart(data.data);
+      toast.success("Đã thêm cấu hình vào giỏ hàng");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSavedBuildActionId("");
+    }
+  };
+
+  const removeSavedBuild = async (build: PCBuild) => {
+    setSavedBuildActionId(build._id);
+    try {
+      await buildPcApi.remove(build._id);
+      setSavedBuilds((current) => current.filter((item) => item._id !== build._id));
+      toast.success("Đã xóa cấu hình");
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setSavedBuildActionId("");
     }
   };
 
@@ -385,6 +447,66 @@ export default function BuildPcPage() {
             </div>
           </aside>
         </div>
+      </section>
+
+      <section className="overflow-hidden border border-[#e5e7eb] bg-white">
+        <header className="flex items-center gap-3 border-b border-[#e5e7eb] px-5 py-4">
+          <History className="size-6 text-[#465fff]" strokeWidth={1.8} />
+          <h2 className="text-xl font-black uppercase text-[#1d2939]">Cấu hình đã lưu</h2>
+        </header>
+
+        {!user ? (
+          <div className="p-8 text-center">
+            <p className="text-sm text-[#667085]">Đăng nhập để xem và sử dụng lại các cấu hình đã lưu.</p>
+            <Button className="mt-4 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" asChild>
+              <Link to="/signin">Đăng nhập</Link>
+            </Button>
+          </div>
+        ) : loadingBuilds ? (
+          <div className="grid min-h-40 place-items-center"><LoaderCircle className="size-8 animate-spin text-[#3278f6]" /></div>
+        ) : savedBuilds.length ? (
+          <div className="divide-y divide-[#eaecf0]">
+            {savedBuilds.map((build) => {
+              const buildProducts = Object.values(build.components).filter((component) => component?.product);
+              return (
+                <article className="grid gap-4 p-5 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-center" key={build._id}>
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-bold text-[#344054]">{build.name}</h3>
+                    <p className="mt-1 text-xs text-[#98a2b3]">
+                      {buildProducts.length} linh kiện · Lưu ngày {new Date(build.createdAt).toLocaleDateString("vi-VN")}
+                    </p>
+                    <div className="mt-3 flex -space-x-2">
+                      {buildProducts.slice(0, 6).map((component, index) => (
+                        <img
+                          className="size-10 rounded-full border-2 border-white bg-white object-contain shadow-sm"
+                          key={`${build._id}-${component!.product._id}-${index}`}
+                          src={component!.product.images?.[0] || "/icons.svg"}
+                          alt=""
+                        />
+                      ))}
+                      {buildProducts.length > 6 ? <span className="grid size-10 place-items-center rounded-full border-2 border-white bg-[#eef4ff] text-xs font-bold text-[#465fff]">+{buildProducts.length - 6}</span> : null}
+                    </div>
+                  </div>
+                  <strong className="text-lg font-black text-[#fb4e4e]">{currency.format(build.totalPrice)}</strong>
+                  <div className="flex flex-wrap gap-2 lg:justify-end">
+                    <Button className="h-10 rounded-none border-[#465fff] text-[#465fff] hover:bg-[#eef4ff]" onClick={() => restoreBuild(build)} type="button" variant="outline">
+                      Nạp lại
+                    </Button>
+                    <Button className="h-10 rounded-none bg-[#465fff] hover:bg-[#3641f5]" disabled={savedBuildActionId === build._id} onClick={() => void addSavedBuildToCart(build)} type="button">
+                      {savedBuildActionId === build._id ? <LoaderCircle className="size-4 animate-spin" /> : <ShoppingCart className="size-4" />}
+                      Thêm vào giỏ
+                    </Button>
+                    <button className="grid size-10 place-items-center text-[#d92d20] transition hover:bg-[#fef3f2]" disabled={savedBuildActionId === build._id} onClick={() => void removeSavedBuild(build)} title="Xóa cấu hình" type="button">
+                      <Trash2 className="size-5" />
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="p-8 text-center text-sm text-[#98a2b3]">Bạn chưa lưu cấu hình PC nào.</div>
+        )}
       </section>
 
       {selectorType ? (

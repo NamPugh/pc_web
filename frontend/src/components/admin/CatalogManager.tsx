@@ -109,7 +109,7 @@ export default function CatalogManager() {
       const [categoryResponse, brandResponse, productResponse] = await Promise.all([
         catalogApi.categories(),
         catalogApi.brands(),
-        catalogApi.products({ limit: 500, sort: "created_desc" }),
+        catalogApi.products({ limit: 2000, sort: "created_desc" }),
       ]);
       setCategories(categoryResponse.data.data);
       setBrands(brandResponse.data.data);
@@ -132,7 +132,7 @@ export default function CatalogManager() {
     void Promise.all([
       catalogApi.categories(),
       catalogApi.brands(),
-      catalogApi.products({ limit: 500, sort: "created_desc" }),
+      catalogApi.products({ limit: 2000, sort: "created_desc" }),
     ]).then(([categoryResponse, brandResponse, productResponse]) => {
       if (!active) return;
       setCategories(categoryResponse.data.data);
@@ -342,10 +342,7 @@ export default function CatalogManager() {
 
       <section className="border border-[#e5e7eb] bg-white">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e7eb] p-5">
-          <div>
             <h2 className="text-xl font-bold text-[#1d2939]">Danh sách sản phẩm</h2>
-            <p className="mt-1 text-sm text-[#8d94ac]">Quản lý catalog và tồn kho của cửa hàng.</p>
-          </div>
           <div className="flex flex-wrap gap-2">
             <ProductExcelImporter brands={brands} categories={categories} onImported={loadData} products={products} />
             <Button className="h-10 rounded-none border-[#dc2626] text-[#dc2626] hover:bg-[#fef2f2]" disabled={!products.length || deletingAll} onClick={() => void deleteAllProducts()} type="button" variant="outline">

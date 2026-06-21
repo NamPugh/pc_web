@@ -3,6 +3,7 @@ import Product from "../models/Product.js";
 import Cart from "../models/Cart.js";
 import FlashSale from "../models/FlashSale.js";
 import { verifyVnPayResponse } from "../utils/vnpay.js";
+import { notifyOrderStatusChange } from "../services/orderMailService.js";
 
 const commitVnPayOrder = async (order) => {
   if (order.inventoryCommitted) return;
@@ -63,7 +64,7 @@ const getPaymentResult = async (query, updateOrder) => {
     return { valid: false, code: "97", message: "Chữ ký VNPay không hợp lệ" };
   }
 
-  const order = await Order.findById(query.vnp_TxnRef);
+  const order = await Order.findById(query.vnp_TxnRef).populate("user", "userName email");
   if (!order || order.paymentMethod !== "vnpay") {
     return { valid: true, code: "01", message: "Không tìm thấy đơn hàng" };
   }
@@ -85,9 +86,11 @@ const getPaymentResult = async (query, updateOrder) => {
     };
     await order.save();
   } else if (updateOrder && !successful && order.paymentStatus !== "paid") {
+    const previousStatus = order.orderStatus;
     order.orderStatus = "cancelled";
     order.paymentDetails.responseCode = String(query.vnp_ResponseCode || "");
     await order.save();
+    notifyOrderStatusChange(order, previousStatus);
   }
 
   return {
@@ -105,10 +108,12 @@ export const cancelPendingVnPay = async (req, res) => {
       user: req.user._id,
       paymentMethod: "vnpay",
       paymentStatus: "unpaid"
-    });
+    }).populate("user", "userName email");
     if (order && order.orderStatus !== "cancelled") {
+      const previousStatus = order.orderStatus;
       order.orderStatus = "cancelled";
       await order.save();
+      notifyOrderStatusChange(order, previousStatus);
     }
     return res.json({ success: true, message: "Đã hủy giao dịch VNPay chưa hoàn tất" });
   } catch (error) {

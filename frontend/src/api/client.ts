@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, Order, OrderStats, Product, ProductType, Review, SiteSetting, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, Order, OrderStats, PCBuild, Product, ProductType, Review, SiteSetting, User } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -75,8 +75,9 @@ export const buildPcApi = {
   components: (productType: ProductType) => api.get<ApiList<Product>>(`/build-pc/components/${productType}`),
   save: (payload: { name: string; components: Record<string, { product: string; quantity: number }>; note?: string }) =>
     api.post<ApiItem<unknown>>("/build-pc/save", payload),
-  mine: () => api.get<ApiList<unknown>>("/build-pc/my-builds"),
+  mine: () => api.get<ApiList<PCBuild>>("/build-pc/my-builds"),
   addToCart: (id: string) => api.post<ApiItem<Cart>>(`/build-pc/${id}/add-to-cart`),
+  remove: (id: string) => api.delete(`/build-pc/${id}`),
 };
 
 export const reviewApi = {

@@ -74,11 +74,9 @@ export default function SiteSettingManager() {
   return (
     <div className="space-y-5">
       <section className="rounded-xl border border-[#eaecf0] bg-white p-5 sm:p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-[#eef4ff] text-[#3278f6]"><Phone className="size-5" /></span>
-          <div>
-            <h2 className="font-bold text-[#101828]">Thanh thông tin phía trên</h2>
-          </div>
+        <div className="mb-5 flex items-center gap-2">
+          <Phone className="size-[22px] text-[#465fff]" />
+          <h2 className="font-bold text-[#101828]">Thanh thông tin phía trên</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>
@@ -99,11 +97,9 @@ export default function SiteSettingManager() {
       </section>
 
       <section className="rounded-xl border border-[#eaecf0] bg-white p-5 sm:p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-[#eef4ff] text-[#3278f6]"><Building2 className="size-5" /></span>
-          <div>
-            <h2 className="font-bold text-[#101828]">Thông tin footer</h2>
-          </div>
+        <div className="mb-5 flex items-center gap-2">
+          <Building2 className="size-[22px] text-[#465fff]" />
+          <h2 className="font-bold text-[#101828]">Thông tin footer</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>
@@ -136,11 +132,9 @@ export default function SiteSettingManager() {
       </section>
 
       <section className="rounded-xl border border-[#eaecf0] bg-white p-5 sm:p-6">
-        <div className="mb-5 flex items-center gap-3">
-          <span className="grid size-10 place-items-center rounded-lg bg-[#fff4e8] text-[#f97316]"><Megaphone className="size-5" /></span>
-          <div>
-            <h2 className="font-bold text-[#101828]">Khu vực nhận khuyến mãi</h2>
-          </div>
+        <div className="mb-5 flex items-center gap-2">
+          <Megaphone className="size-[22px] text-[#465fff]" />
+          <h2 className="font-bold text-[#101828]">Khu vực nhận khuyến mãi</h2>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <label className={labelClassName}>

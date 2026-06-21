@@ -1,5 +1,5 @@
 import { Eye, EyeOff, ImagePlus, LoaderCircle, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -50,26 +50,26 @@ const currentSectionDefaults = [
 export default function HomeSectionManager() {
   const [sections, setSections] = useState<HomeSection[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [categoryProducts, setCategoryProducts] = useState<Product[]>([]);
   const [form, setForm] = useState<SectionForm>(emptyForm);
   const [editingId, setEditingId] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const productCacheRef = useRef<Map<string, Product[]>>(new Map());
 
-  const loadData = async () => {
+  const loadSectionsAndCategories = async () => {
     setLoading(true);
     try {
-      const [sectionResponse, categoryResponse, productResponse] = await Promise.all([
+      const [sectionResponse, categoryResponse] = await Promise.all([
         catalogApi.homeSections(),
         catalogApi.categories(),
-        catalogApi.products({ limit: 500, sort: "created_desc" }),
       ]);
       setSections(sectionResponse.data.data);
       setCategories(categoryResponse.data.data);
-      setProducts(productResponse.data.data);
       setForm((current) => ({
         ...current,
         category: current.category || categoryResponse.data.data[0]?._id || "",
@@ -81,21 +81,43 @@ export default function HomeSectionManager() {
     }
   };
 
+  const loadProductsForCategory = useCallback(async (categoryId: string) => {
+    if (!categoryId) {
+      setCategoryProducts([]);
+      return;
+    }
+    const cached = productCacheRef.current.get(categoryId);
+    if (cached) {
+      setCategoryProducts(cached);
+      return;
+    }
+    setLoadingProducts(true);
+    try {
+      const { data } = await catalogApi.products({ category: categoryId, limit: 200, sort: "created_desc" });
+      productCacheRef.current.set(categoryId, data.data);
+      setCategoryProducts(data.data);
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoadingProducts(false);
+    }
+  }, []);
+
   useEffect(() => {
     let active = true;
     void Promise.all([
       catalogApi.homeSections(),
       catalogApi.categories(),
-      catalogApi.products({ limit: 500, sort: "created_desc" }),
-    ]).then(([sectionResponse, categoryResponse, productResponse]) => {
+    ]).then(([sectionResponse, categoryResponse]) => {
       if (!active) return;
       setSections(sectionResponse.data.data);
       setCategories(categoryResponse.data.data);
-      setProducts(productResponse.data.data);
+      const firstCategoryId = categoryResponse.data.data[0]?._id || "";
       setForm((current) => ({
         ...current,
-        category: current.category || categoryResponse.data.data[0]?._id || "",
+        category: current.category || firstCategoryId,
       }));
+      if (firstCategoryId) void loadProductsForCategory(firstCategoryId);
       setLoading(false);
     }).catch((error: unknown) => {
       if (!active) return;
@@ -105,15 +127,19 @@ export default function HomeSectionManager() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [loadProductsForCategory]);
 
-  const categoryProducts = useMemo(() => {
+  useEffect(() => {
+    if (form.category) {
+      void loadProductsForCategory(form.category);
+    }
+  }, [form.category, loadProductsForCategory]);
+
+  const filteredProducts = useMemo(() => {
     const keyword = normalize(search);
-    return products.filter((product) => {
-      if (product.category?._id !== form.category) return false;
-      return !keyword || normalize(product.name).includes(keyword);
-    });
-  }, [form.category, products, search]);
+    if (!keyword) return categoryProducts;
+    return categoryProducts.filter((product) => normalize(product.name).includes(keyword));
+  }, [search, categoryProducts]);
 
   const resetForm = () => {
     setEditingId("");
@@ -189,7 +215,8 @@ export default function HomeSectionManager() {
         toast.success("Đã thêm danh mục trang chủ");
       }
       resetForm();
-      await loadData();
+      productCacheRef.current.clear();
+      await loadSectionsAndCategories();
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -200,7 +227,7 @@ export default function HomeSectionManager() {
   const toggleSection = async (section: HomeSection) => {
     try {
       await adminApi.updateHomeSection(section._id, { isActive: !section.isActive });
-      await loadData();
+      await loadSectionsAndCategories();
       toast.success(section.isActive ? "Đã ẩn khu vực" : "Đã hiện khu vực");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -212,7 +239,7 @@ export default function HomeSectionManager() {
     try {
       await adminApi.deleteHomeSection(section._id);
       if (editingId === section._id) resetForm();
-      await loadData();
+      await loadSectionsAndCategories();
       toast.success("Đã xóa khu vực");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -221,26 +248,47 @@ export default function HomeSectionManager() {
 
   const importCurrentSections = async () => {
     const existingCategoryIds = new Set(sections.map((section) => section.category._id));
-    const additions = currentSectionDefaults.flatMap((item, index) => {
+    const matchedCategories = currentSectionDefaults.flatMap((item, index) => {
       const category = categories.find((entry) => normalize(entry.name) === normalize(item.category));
       if (!category || existingCategoryIds.has(category._id)) return [];
-      const selectedProducts = products
-        .filter((product) => product.category?._id === category._id)
-        .slice(0, 4)
-        .map((product) => product._id);
-      if (!selectedProducts.length) return [];
-      return [{ ...item, category: category._id, products: selectedProducts, isActive: true, sortOrder: index }];
+      return [{ ...item, categoryObj: category, index }];
     });
 
-    if (!additions.length) {
+    if (!matchedCategories.length) {
       toast.info("Các danh mục hiện tại đã được cấu hình");
       return;
     }
+
     setSaving(true);
     try {
-      await Promise.all(additions.map((payload) => adminApi.createHomeSection(payload)));
-      await loadData();
-      toast.success(`Đã nạp ${additions.length} khu vực trang chủ`);
+      const additions = await Promise.all(
+        matchedCategories.map(async (item) => {
+          const { data } = await catalogApi.products({ category: item.categoryObj._id, limit: 4, sort: "created_desc" });
+          const selectedProducts = data.data.map((product) => product._id);
+          if (!selectedProducts.length) return null;
+          return {
+            title: item.title,
+            keyword: item.keyword,
+            bannerImage: item.bannerImage,
+            category: item.categoryObj._id,
+            products: selectedProducts,
+            isActive: true,
+            sortOrder: item.index,
+          };
+        }),
+      );
+
+      const validAdditions = additions.filter(Boolean) as NonNullable<(typeof additions)[number]>[];
+      if (!validAdditions.length) {
+        toast.info("Không có danh mục nào có sản phẩm để nạp");
+        setSaving(false);
+        return;
+      }
+
+      await Promise.all(validAdditions.map((payload) => adminApi.createHomeSection(payload)));
+      productCacheRef.current.clear();
+      await loadSectionsAndCategories();
+      toast.success(`Đã nạp ${validAdditions.length} khu vực trang chủ`);
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
@@ -268,7 +316,7 @@ export default function HomeSectionManager() {
         <div className="grid gap-5 p-5 xl:grid-cols-[minmax(0,1fr)_430px]">
           <div className="space-y-3">
             {loading ? <p className="p-8 text-center text-sm text-[#8d94ac]">Đang tải cấu hình...</p> : null}
-            {!loading && !sections.length ? <p className="rounded-xl border border-dashed border-[#d0d5dd] p-8 text-center text-sm text-[#8d94ac]">Chưa có cấu hình. Có thể dùng nút “Nạp cấu hình hiện tại”.</p> : null}
+            {!loading && !sections.length ? <p className="rounded-xl border border-dashed border-[#d0d5dd] p-8 text-center text-sm text-[#8d94ac]">Chưa có cấu hình. Có thể dùng nút "Nạp cấu hình hiện tại".</p> : null}
             {sections.map((section) => (
               <article className={`grid gap-4 overflow-hidden rounded-xl border p-3 sm:grid-cols-[120px_minmax(0,1fr)_auto] ${section.isActive ? "border-[#d0d5dd]" : "border-[#e5e7eb] opacity-60"}`} key={section._id}>
                 <img className="aspect-[260/405] h-36 w-full rounded-lg bg-[#f2f4f7] object-cover" src={section.bannerImage} alt={section.title} />
@@ -320,14 +368,23 @@ export default function HomeSectionManager() {
                   </label>
                 </div>
                 <div className="max-h-64 divide-y divide-[#eef0f3] overflow-y-auto">
-                  {categoryProducts.map((product) => (
-                    <label className="flex cursor-pointer items-center gap-3 p-2 hover:bg-[#f8faff]" key={product._id}>
-                      <input checked={form.products.includes(product._id)} className="size-4 accent-[#3278f6]" onChange={() => toggleProduct(product._id)} type="checkbox" />
-                      <img className="size-11 rounded-md object-contain" src={product.images?.[0] || "/icons.svg"} alt="" />
-                      <span className="line-clamp-2 text-xs font-semibold text-[#475467]">{product.name}</span>
-                    </label>
-                  ))}
-                  {!categoryProducts.length ? <p className="p-5 text-center text-xs text-[#98a2b3]">Danh mục chưa có sản phẩm phù hợp.</p> : null}
+                  {loadingProducts ? (
+                    <div className="flex items-center justify-center gap-2 p-5 text-sm text-[#8d94ac]">
+                      <LoaderCircle className="size-4 animate-spin text-[#465fff]" />
+                      Đang tải sản phẩm...
+                    </div>
+                  ) : (
+                    <>
+                      {filteredProducts.map((product) => (
+                        <label className="flex cursor-pointer items-center gap-3 p-2 hover:bg-[#f8faff]" key={product._id}>
+                          <input checked={form.products.includes(product._id)} className="size-4 accent-[#3278f6]" onChange={() => toggleProduct(product._id)} type="checkbox" />
+                          <img className="size-11 rounded-md object-contain" src={product.images?.[0] || "/icons.svg"} alt="" />
+                          <span className="line-clamp-2 text-xs font-semibold text-[#475467]">{product.name}</span>
+                        </label>
+                      ))}
+                      {!filteredProducts.length ? <p className="p-5 text-center text-xs text-[#98a2b3]">Danh mục chưa có sản phẩm phù hợp.</p> : null}
+                    </>
+                  )}
                 </div>
               </div>
 

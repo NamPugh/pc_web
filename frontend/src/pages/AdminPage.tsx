@@ -11,7 +11,7 @@ import {
   LogOut,
   Menu,
   PackageCheck,
-  PackageSearch,
+  Package,
   PanelsTopLeft,
   PanelLeftClose,
   PanelLeftOpen,
@@ -39,7 +39,7 @@ type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners" | "home
 const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof Gauge }> = [
   { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: Gauge },
   { id: "orders", label: "Đơn hàng", helper: "Xử lý và giao hàng", icon: ClipboardList },
-  { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: PackageSearch },
+  { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: Package },
   { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: BadgePercent },
   { id: "banners", label: "Banner", helper: "Giao diện website", icon: Images },
   { id: "home-sections", label: "Danh mục trang chủ", helper: "Banner & sản phẩm hiển thị", icon: PanelsTopLeft },
@@ -235,12 +235,11 @@ export default function AdminPage() {
                 <div className="relative hidden w-[min(38vw,430px)] md:block">
                   <Search className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
                   <input
-                    className="h-11 w-full rounded-lg border border-[#e4e7ec] bg-white pl-11 pr-14 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#465fff] focus:ring-4 focus:ring-[#465fff]/10"
+                    className="h-11 w-full rounded-lg border border-[#e4e7ec] bg-white pl-11 pr-4 text-sm outline-none transition placeholder:text-[#98a2b3] focus:border-[#465fff] focus:ring-4 focus:ring-[#465fff]/10"
                     onChange={(event) => setMenuSearch(event.target.value)}
                     placeholder="Tìm chức năng quản trị..."
                     value={menuSearch}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-[#e4e7ec] bg-[#f9fafb] px-1.5 py-0.5 text-[10px] font-bold text-[#98a2b3]">⌘ K</span>
                   {menuSearch ? (
                     <div className="absolute left-0 right-0 top-[calc(100%+8px)] rounded-xl border border-[#eaecf0] bg-white p-2 shadow-[0_12px_30px_rgba(16,24,40,0.12)]">
                       {filteredNavItems.length ? filteredNavItems.map((item) => {

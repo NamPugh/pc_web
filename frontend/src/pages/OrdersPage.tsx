@@ -1,9 +1,8 @@
 import {
   ArrowLeft,
-  BadgeCheck,
-  Ban,
   CalendarDays,
   Check,
+  CheckCircle2,
   ClipboardList,
   Clock3,
   CreditCard,
@@ -30,11 +29,11 @@ const currency = new Intl.NumberFormat("vi-VN", {
 });
 
 const orderStatusMap: Record<Order["orderStatus"], { label: string; tone: string; icon: typeof Clock3 }> = {
-  pending: { label: "Chờ xác nhận", tone: "bg-[#fff7ed] text-[#c2410c]", icon: Clock3 },
-  confirmed: { label: "Đã xác nhận", tone: "bg-[#ecf3ff] text-[#465fff]", icon: BadgeCheck },
+  pending: { label: "Chờ xác nhận", tone: "bg-[#fff6ed] text-[#f79009]", icon: Clock3 },
+  confirmed: { label: "Đã xác nhận", tone: "bg-[#ecf3ff] text-[#465fff]", icon: PackageCheck },
   shipping: { label: "Đang giao hàng", tone: "bg-[#f4f3ff] text-[#7a5af8]", icon: Truck },
-  completed: { label: "Hoàn thành", tone: "bg-[#ecfdf3] text-[#12b76a]", icon: PackageCheck },
-  cancelled: { label: "Đã hủy", tone: "bg-[#fef3f2] text-[#f04438]", icon: Ban },
+  completed: { label: "Hoàn thành", tone: "bg-[#ecfdf3] text-[#12b76a]", icon: CheckCircle2 },
+  cancelled: { label: "Đã hủy", tone: "bg-[#fef3f2] text-[#f04438]", icon: XCircle },
 };
 
 const paymentLabels: Record<Order["paymentMethod"], string> = {
@@ -130,8 +129,8 @@ export default function OrdersPage() {
               onClick={() => setFilter(filter === status ? "all" : status)}
               type="button"
             >
-              <span className={`grid size-10 shrink-0 place-items-center ${info.tone.split(" ").find((className) => className.startsWith("text-")) || ""}`}>
-                <Icon className="size-7" strokeWidth={1.8} />
+              <span className={`grid size-11 shrink-0 place-items-center ${info.tone.split(" ").find((className) => className.startsWith("text-")) || ""}`}>
+                <Icon className="size-8" strokeWidth={1.8} />
               </span>
               <span><b className="block text-xl text-[#1d2939]">{statusCounts[status] || 0}</b><small className="font-semibold text-[#667085]">{info.label}</small></span>
             </button>
@@ -199,9 +198,11 @@ export default function OrdersPage() {
                           const StepIcon = orderStatusMap[step].icon;
                           return (
                             <div className="relative text-center" key={step}>
-                              {index > 0 ? <span className={`absolute right-1/2 top-5 h-0.5 w-full ${index <= currentStep ? "bg-[#3278f6]" : "bg-[#dfe3e8]"}`} /> : null}
-                              <span className={`relative z-10 mx-auto grid size-10 place-items-center border-2 ${complete ? "border-[#3278f6] bg-[#3278f6] text-white" : "border-[#d0d5dd] bg-white text-[#98a2b3]"}`}>{index < currentStep ? <Check className="size-5" /> : <StepIcon className="size-4" />}</span>
-                              <p className={`mt-2 text-xs font-bold ${complete ? "text-[#3278f6]" : "text-[#98a2b3]"}`}>{orderStatusMap[step].label}</p>
+                              {index > 0 ? <span className={`absolute right-1/2 top-6 h-0.5 w-full ${index <= currentStep ? "bg-[#465fff]" : "bg-[#e4e7ec]"}`} /> : null}
+                              <span className={`relative z-10 mx-auto grid size-12 place-items-center rounded-full transition ${index === currentStep ? "bg-[#465fff] text-white shadow-[0_0_0_5px_rgba(70,95,255,0.12)]" : index < currentStep ? "bg-[#ecf3ff] text-[#465fff]" : "bg-[#f2f4f7] text-[#98a2b3]"}`}>
+                                {index < currentStep ? <Check className="size-6" strokeWidth={2.2} /> : <StepIcon className="size-6" strokeWidth={1.8} />}
+                              </span>
+                              <p className={`mt-2 text-xs font-semibold ${complete ? "text-[#465fff]" : "text-[#98a2b3]"}`}>{orderStatusMap[step].label}</p>
                             </div>
                           );
                         })}

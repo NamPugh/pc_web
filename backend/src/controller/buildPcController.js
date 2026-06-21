@@ -39,6 +39,22 @@ const calculateBuildTotal = async (components) => {
   return total;
 };
 
+const populateBuild = (query) =>
+  query
+    .populate("components.cpu.product")
+    .populate("components.mainboard.product")
+    .populate("components.ram.product")
+    .populate("components.ssd.product")
+    .populate("components.hdd.product")
+    .populate("components.gpu.product")
+    .populate("components.psu.product")
+    .populate("components.case.product")
+    .populate("components.cooler.product")
+    .populate("components.monitor.product")
+    .populate("components.keyboard.product")
+    .populate("components.mouse.product")
+    .populate("components.headphone.product");
+
 export const getComponentsByType = async (req, res) => {
   try {
     const { productType } = req.params;
@@ -90,20 +106,7 @@ export const saveBuild = async (req, res) => {
       note
     });
 
-    const populatedBuild = await PCBuild.findById(build._id)
-      .populate("components.cpu.product")
-      .populate("components.mainboard.product")
-      .populate("components.ram.product")
-      .populate("components.ssd.product")
-      .populate("components.hdd.product")
-      .populate("components.gpu.product")
-      .populate("components.psu.product")
-      .populate("components.case.product")
-      .populate("components.cooler.product")
-      .populate("components.monitor.product")
-      .populate("components.keyboard.product")
-      .populate("components.mouse.product")
-      .populate("components.headphone.product");
+    const populatedBuild = await populateBuild(PCBuild.findById(build._id));
 
     res.status(201).json({
       success: true,
@@ -117,7 +120,9 @@ export const saveBuild = async (req, res) => {
 
 export const getMyBuilds = async (req, res) => {
   try {
-    const builds = await PCBuild.find({ user: req.user._id }).sort({ createdAt: -1 });
+    const builds = await populateBuild(
+      PCBuild.find({ user: req.user._id }).sort({ createdAt: -1 })
+    );
     res.json({ success: true, count: builds.length, data: builds });
   } catch (error) {
     res.status(500).json({ success: false, message: "Lỗi lấy cấu hình", error: error.message });
@@ -126,10 +131,10 @@ export const getMyBuilds = async (req, res) => {
 
 export const getBuildById = async (req, res) => {
   try {
-    const build = await PCBuild.findOne({
+    const build = await populateBuild(PCBuild.findOne({
       _id: req.params.id,
       user: req.user._id
-    });
+    }));
 
     if (!build) {
       return res.status(404).json({ success: false, message: "Không tìm thấy cấu hình" });

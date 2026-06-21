@@ -3,6 +3,7 @@ import Product from '../models/Product.js';
 import Cart from '../models/Cart.js';
 import FlashSale from '../models/FlashSale.js';
 import { createVnPayUrl, getVnPayConfig } from '../utils/vnpay.js';
+import { notifyOrderStatusChange } from "../services/orderMailService.js";
 
 export const createOrder = async (req, res) => {
   try {
@@ -179,13 +180,15 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { orderStatus, paymentStatus } = req.body;
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate("user", "userName email");
     if (!order) return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
 
+    const previousStatus = order.orderStatus;
     if (orderStatus) order.orderStatus = orderStatus;
     if (paymentStatus) order.paymentStatus = paymentStatus;
 
     await order.save();
+    notifyOrderStatusChange(order, previousStatus);
 
     res.json({ success: true, message: "Cập nhật trạng thái đơn hàng thành công", data: order });
   } catch (error) {
@@ -195,7 +198,8 @@ export const updateOrderStatus = async (req, res) => {
 
 export const cancelOrder = async (req, res) => {
   try {
-    const order = await Order.findOne({ _id: req.params.id, user: req.user._id });
+    const order = await Order.findOne({ _id: req.params.id, user: req.user._id })
+      .populate("user", "userName email");
 
     if (!order) {
       return res.status(404).json({ success: false, message: "Không tìm thấy đơn hàng" });
@@ -208,8 +212,10 @@ export const cancelOrder = async (req, res) => {
       });
     }
 
+    const previousStatus = order.orderStatus;
     order.orderStatus = "cancelled";
     await order.save();
+    notifyOrderStatusChange(order, previousStatus);
 
     res.json({ success: true, message: "Hủy đơn hàng thành công", data: order });
   } catch (error) {

@@ -1,4 +1,4 @@
-import { Boxes, ChevronDown, ChevronRight, CircleUserRound, ClipboardList, Cpu, Gamepad2, Headphones, Laptop, LayoutGrid, LogIn, LogOut, Mail, MapPin, MapPinned, Menu, Monitor, PackageCheck, Phone, Search, ShoppingCart, UserPlus, UserRound } from "lucide-react";
+import { Blocks, BrainCircuit, ChevronDown, ChevronRight, CircleUserRound, CircuitBoard, ClipboardList, Gamepad2, Keyboard, Laptop, LayoutGrid, LogIn, LogOut, Mail, MapPin, MapPinned, Menu, Monitor, PcCase, Phone, Printer, Router, Search, ShoppingCart, UserPlus, UserRound, Wrench } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
@@ -23,17 +23,17 @@ const navItems = [
 ];
 
 const categoryItems = [
-  { label: "Xây dựng cấu hình PC", helper: "PC AMD / PC Cao Cấp", keyword: "Build PC", icon: Cpu },
-  { label: "PC Gaming", helper: "Giá tốt, sẵn hàng", keyword: "PC Gaming", icon: Boxes },
-  { label: "PC Đồ Họa AI", helper: "Tối ưu công việc", keyword: "PC Đồ Họa AI", icon: Cpu },
-  { label: "Laptop - Máy Tính Xách Tay", helper: "Gaming / Văn phòng", keyword: "Laptop", icon: Laptop },
-  { label: "Màn Hình Máy Tính", helper: "Gaming / Đồ họa", keyword: "Màn hình", icon: Monitor },
-  { label: "Máy chơi game - Console", helper: "PS5 / Nintendo Switch", keyword: "PS5", icon: Gamepad2 },
-  { label: "VGA - Card màn hình", helper: "RTX 5060 / RTX 5070", keyword: "RTX", icon: Boxes },
-  { label: "Linh kiện máy tính", helper: "CPU / Mainboard / RAM", keyword: "CPU RAM SSD", icon: PackageCheck },
-  { label: "Gaming Gears", helper: "Bàn phím / Chuột / Tai nghe", keyword: "Gaming Gear", icon: Headphones },
-  { label: "Thiết bị văn phòng", helper: "Máy in / Camera", keyword: "Máy in", icon: PackageCheck },
-  { label: "Thiết bị mạng", helper: "Router / Wifi / Switch", keyword: "Router Wifi", icon: PackageCheck },
+  { label: "Xây dựng cấu hình PC", keyword: "Build PC", path: "/build-pc", icon: Wrench },
+  { label: "PC Gaming", keyword: "PC Gaming", icon: PcCase },
+  { label: "PC Đồ Họa AI", keyword: "PC Đồ Họa AI", icon: BrainCircuit },
+  { label: "Laptop - Máy Tính Xách Tay", keyword: "Laptop", icon: Laptop },
+  { label: "Màn Hình Máy Tính", keyword: "Màn hình", icon: Monitor },
+  { label: "Máy chơi game - Console", keyword: "PS5", icon: Gamepad2 },
+  { label: "VGA - Card màn hình", keyword: "RTX", icon: CircuitBoard },
+  { label: "Linh kiện máy tính", keyword: "CPU RAM SSD", icon: Blocks },
+  { label: "Gaming Gears", keyword: "Gaming Gear", icon: Keyboard },
+  { label: "Thiết bị văn phòng", keyword: "Máy in", icon: Printer },
+  { label: "Thiết bị mạng", keyword: "Router Wifi", icon: Router },
 ];
 
 const footerGroups = [
@@ -334,21 +334,18 @@ export default function Layout() {
                 Danh mục sản phẩm
                 <ChevronDown className="size-4 transition-transform duration-300 group-hover:rotate-180" />
               </button>
-              <div className="invisible absolute left-0 top-full z-50 w-[310px] translate-y-2 border border-[#dedede] bg-[#3e4b75] opacity-0 shadow-xl transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+              <div className="invisible absolute left-0 top-full z-50 w-[280px] translate-y-2 border border-[#dedede] bg-[#3e4b75] opacity-0 shadow-xl transition duration-200 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                 {categoryItems.map((item) => {
                   const Icon = item.icon;
                   return (
                     <button
                       key={item.label}
-                      className="flex w-full items-center gap-3 border-b border-[#8d94ac]/45 px-4 py-2.5 text-left text-white transition last:border-0 hover:bg-white hover:text-[#29324e]"
-                      onClick={() => navigate(`/?keyword=${encodeURIComponent(item.keyword)}`)}
+                      className="flex min-h-12 w-full items-center gap-3.5 border-b border-[#8d94ac]/45 px-4 py-3 text-left text-white transition last:border-0 hover:bg-white hover:text-[#29324e]"
+                       onClick={() => navigate(("path" in item && item.path) || `/?keyword=${encodeURIComponent(item.keyword)}`)}
                       type="button"
                     >
-                      <Icon className="size-4 shrink-0 text-[#72a3ff]" />
-                      <span className="min-w-0 flex-1">
-                        <b className="block truncate text-sm">{item.label}</b>
-                        <small className="block truncate text-[11px] font-semibold opacity-65">{item.helper}</small>
-                      </span>
+                      <Icon className="size-6 shrink-0 text-[#72a3ff]" strokeWidth={1.8} />
+                      <b className="min-w-0 flex-1 truncate text-sm">{item.label}</b>
                       <ChevronRight className="size-4 shrink-0" />
                     </button>
                   );

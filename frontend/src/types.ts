@@ -109,6 +109,16 @@ export type Product = {
   status?: "active" | "inactive" | "out_of_stock";
 };
 
+export type PCBuild = {
+  _id: string;
+  name: string;
+  components: Partial<Record<ProductType, { product: Product; quantity: number }>>;
+  totalPrice: number;
+  note?: string;
+  createdAt: string;
+  updatedAt?: string;
+};
+
 export type FlashSaleItem = {
   _id: string;
   product: Product;

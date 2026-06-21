@@ -1,5 +1,5 @@
-import { CalendarClock, ChevronRight, Flame, Pencil, Plus, Search, Trash2, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, ChevronRight, Flame, LoaderCircle, Pencil, Plus, Search, Trash2, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { toast } from "sonner";
 
@@ -32,9 +32,10 @@ const saleState = (sale: FlashSale) => {
 
 export default function DealManager() {
   const [sales, setSales] = useState<FlashSale[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const [searchProducts, setSearchProducts] = useState<Product[]>([]);
   const [selectedId, setSelectedId] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(false);
   const [showSaleForm, setShowSaleForm] = useState(false);
   const [editingSaleId, setEditingSaleId] = useState("");
   const [editingItemId, setEditingItemId] = useState("");
@@ -50,62 +51,84 @@ export default function DealManager() {
     dealPrice: "",
     quantity: "",
   });
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
+  const productCacheRef = useRef<Map<string, Product>>(new Map());
 
   const selectedSale = sales.find((sale) => sale._id === selectedId) || null;
 
-  const loadData = async (preferredId?: string) => {
+  const loadSales = useCallback(async (preferredId?: string) => {
     setLoading(true);
     try {
-      const [saleResponse, productResponse] = await Promise.all([
-        flashSaleApi.list(),
-        catalogApi.products({ limit: 200, sort: "created_desc" }),
-      ]);
-      setSales(saleResponse.data.data);
-      setProducts(productResponse.data.data);
-      const nextId = preferredId || selectedId || saleResponse.data.data[0]?._id || "";
+      const { data } = await flashSaleApi.list();
+      setSales(data.data);
+      const nextId = preferredId || selectedId || data.data[0]?._id || "";
       setSelectedId(nextId);
-      setItemForm((current) => ({
-        ...current,
-        productId: current.productId || productResponse.data.data[0]?._id || "",
-      }));
     } catch (error) {
       toast.error(getErrorMessage(error));
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedId]);
 
   useEffect(() => {
     let active = true;
-    void Promise.all([
-      flashSaleApi.list(),
-      catalogApi.products({ limit: 200, sort: "created_desc" }),
-    ]).then(([saleResponse, productResponse]) => {
-      if (!active) return;
-      setSales(saleResponse.data.data);
-      setProducts(productResponse.data.data);
-      setSelectedId(saleResponse.data.data[0]?._id || "");
-      setItemForm((current) => ({ ...current, productId: productResponse.data.data[0]?._id || "" }));
-      setLoading(false);
-    }).catch((error: unknown) => {
-      if (!active) return;
-      toast.error(getErrorMessage(error));
-      setLoading(false);
-    });
+    void flashSaleApi.list()
+      .then(({ data }) => {
+        if (!active) return;
+        setSales(data.data);
+        setSelectedId(data.data[0]?._id || "");
+        setLoading(false);
+      })
+      .catch((error: unknown) => {
+        if (!active) return;
+        toast.error(getErrorMessage(error));
+        setLoading(false);
+      });
     return () => {
       active = false;
     };
   }, []);
 
+  const searchForProducts = useCallback((keyword: string) => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+
+    const trimmed = keyword.trim();
+    if (!trimmed) {
+      setSearchProducts([]);
+      setLoadingProducts(false);
+      return;
+    }
+
+    setLoadingProducts(true);
+    searchTimerRef.current = setTimeout(() => {
+      void catalogApi
+        .products({ keyword: trimmed, limit: 50, sort: "created_desc" })
+        .then(({ data }) => {
+          setSearchProducts(data.data);
+          for (const product of data.data) {
+            productCacheRef.current.set(product._id, product);
+          }
+          setLoadingProducts(false);
+        })
+        .catch((error: unknown) => {
+          toast.error(getErrorMessage(error));
+          setLoadingProducts(false);
+        });
+    }, 350);
+  }, []);
+
+  useEffect(() => {
+    if (!editingItemId) {
+      searchForProducts(search);
+    }
+  }, [search, editingItemId, searchForProducts]);
+
   const availableProducts = useMemo(() => {
     const existingIds = new Set(selectedSale?.items.map((item) => item.product._id) || []);
-    const keyword = search.trim().toLowerCase();
-    return products.filter(
-      (product) =>
-        (!existingIds.has(product._id) || editingItemId) &&
-        (!keyword || product.name.toLowerCase().includes(keyword)),
+    return searchProducts.filter(
+      (product) => !existingIds.has(product._id) || editingItemId,
     );
-  }, [editingItemId, products, search, selectedSale]);
+  }, [editingItemId, searchProducts, selectedSale]);
 
   const resetSaleForm = () => {
     setEditingSaleId("");
@@ -145,11 +168,11 @@ export default function DealManager() {
       if (editingSaleId) {
         await flashSaleApi.update(editingSaleId, payload);
         toast.success("Đã cập nhật đợt giảm giá");
-        await loadData(editingSaleId);
+        await loadSales(editingSaleId);
       } else {
         const { data } = await flashSaleApi.create(payload);
         toast.success("Đã tạo đợt giảm giá");
-        await loadData(data.data._id);
+        await loadSales(data.data._id);
       }
       resetSaleForm();
     } catch (error) {
@@ -161,7 +184,7 @@ export default function DealManager() {
     if (!window.confirm(`Xóa đợt "${sale.name}" và toàn bộ sản phẩm bên trong?`)) return;
     try {
       await flashSaleApi.remove(sale._id);
-      await loadData();
+      await loadSales();
       toast.success("Đã xóa đợt giảm giá");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -170,23 +193,32 @@ export default function DealManager() {
 
   const resetItemForm = () => {
     setEditingItemId("");
-    setItemForm({ productId: products[0]?._id || "", dealPrice: "", quantity: "" });
+    setItemForm({ productId: "", dealPrice: "", quantity: "" });
+    setSearch("");
+    setSearchProducts([]);
   };
 
   const editItem = (item: FlashSaleItem) => {
     setEditingItemId(item._id);
+    productCacheRef.current.set(item.product._id, item.product);
     setItemForm({
       productId: item.product._id,
       dealPrice: String(item.dealPrice),
       quantity: String(item.quantity),
     });
+    setSearch("");
+    setSearchProducts([item.product]);
   };
 
   const submitItem = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!selectedSale) return;
-    const product = products.find((item) => item._id === itemForm.productId);
-    if (!product) return;
+    const product = productCacheRef.current.get(itemForm.productId)
+      || searchProducts.find((item) => item._id === itemForm.productId);
+    if (!product) {
+      toast.error("Không tìm thấy sản phẩm");
+      return;
+    }
     if (Number(itemForm.dealPrice) >= product.price) {
       toast.warning("Giá ưu đãi phải thấp hơn giá bán");
       return;
@@ -211,7 +243,7 @@ export default function DealManager() {
         toast.success("Đã thêm sản phẩm vào đợt");
       }
       resetItemForm();
-      await loadData(selectedSale._id);
+      await loadSales(selectedSale._id);
     } catch (error) {
       toast.error(getErrorMessage(error));
     }
@@ -221,7 +253,7 @@ export default function DealManager() {
     if (!selectedSale || !window.confirm(`Xóa "${item.product.name}" khỏi đợt này?`)) return;
     try {
       await flashSaleApi.removeItem(selectedSale._id, item._id);
-      await loadData(selectedSale._id);
+      await loadSales(selectedSale._id);
       toast.success("Đã xóa sản phẩm khỏi đợt");
     } catch (error) {
       toast.error(getErrorMessage(error));
@@ -279,8 +311,15 @@ export default function DealManager() {
               </div>
 
               <form className="grid gap-3 border-b border-[#e5e7eb] bg-[#f9fafb] p-5 md:grid-cols-2 xl:grid-cols-[minmax(240px,1fr)_160px_130px_auto]" onSubmit={submitItem}>
-                <label className="relative md:col-span-2 xl:col-span-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-9 pr-3 text-sm" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sản phẩm..." value={search} /></label>
-                <AdminSelect className="xl:col-start-1" disabled={Boolean(editingItemId)} options={(editingItemId ? selectedSale.items.filter((item) => item._id === editingItemId).map((item) => item.product) : availableProducts).map((product) => ({ value: product._id, label: product.name }))} onValueChange={(productId) => setItemForm({ ...itemForm, productId })} value={itemForm.productId} />
+                <label className="relative md:col-span-2 xl:col-span-1"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" /><input className="h-11 w-full border border-[#d0d5dd] bg-white pl-9 pr-3 text-sm" onChange={(event) => setSearch(event.target.value)} placeholder="Tìm sản phẩm để thêm..." value={search} /></label>
+                {loadingProducts ? (
+                  <div className="flex items-center gap-2 text-sm text-[#8d94ac]">
+                    <LoaderCircle className="size-4 animate-spin text-[#465fff]" />
+                    Đang tìm...
+                  </div>
+                ) : (
+                  <AdminSelect className="xl:col-start-1" disabled={Boolean(editingItemId)} options={availableProducts.map((product) => ({ value: product._id, label: product.name }))} onValueChange={(productId) => setItemForm({ ...itemForm, productId })} value={itemForm.productId} />
+                )}
                 <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="1" onChange={(event) => setItemForm({ ...itemForm, dealPrice: event.target.value })} placeholder="Giá ưu đãi" required type="number" value={itemForm.dealPrice} />
                 <input className="h-11 border border-[#d0d5dd] bg-white px-3 text-sm" min="1" onChange={(event) => setItemForm({ ...itemForm, quantity: event.target.value })} placeholder="Số suất" required type="number" value={itemForm.quantity} />
                 <div className="flex gap-2"><Button className="h-11 flex-1 rounded-lg bg-[#3278f6] hover:bg-[#2860c5]">{editingItemId ? "Cập nhật" : "Thêm sản phẩm"}</Button>{editingItemId ? <Button className="h-11 rounded-lg" onClick={resetItemForm} type="button" variant="outline"><X className="size-4" /></Button> : null}</div>
