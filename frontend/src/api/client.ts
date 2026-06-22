@@ -26,6 +26,8 @@ export const authApi = {
   signIn: (payload: { email: string; password: string }) =>
     api.post<{ message: string; accessToken: string }>("/auth/signin", payload),
   signUp: (payload: { userName: string; email: string; password: string }) => api.post("/auth/signup", payload),
+  googleSignIn: (credential: string) =>
+    api.post<{ message: string; accessToken: string }>("/auth/google", { credential }),
   signOut: () => api.post("/auth/signout"),
   me: () => api.get<{ user: User }>("/users/me"),
   updateProfile: (payload: Pick<User, "userName" | "email"> & Pick<Required<User>, "phone" | "address">) =>

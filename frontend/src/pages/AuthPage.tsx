@@ -5,6 +5,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import { authApi, getErrorMessage } from "@/api/client";
+import GoogleSignInButton from "@/components/auth/GoogleSignInButton";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/auth";
 
@@ -22,6 +23,20 @@ export default function AuthPage() {
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const submitGoogleSignIn = async (credential: string) => {
+    setLoading(true);
+    try {
+      const { data } = await authApi.googleSignIn(credential);
+      setSession(data.accessToken);
+      toast.success(data.message || "Đăng nhập Google thành công");
+      navigate("/", { replace: true });
+    } catch (error) {
+      toast.error(getErrorMessage(error));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const submitSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -110,6 +125,7 @@ export default function AuthPage() {
                   form={signUp}
                   loading={loading}
                   onChange={setSignUp}
+                  onGoogleSignIn={submitGoogleSignIn}
                   onSubmit={submitSignUp}
                   onTogglePassword={() => setShowSignUpPassword((current) => !current)}
                   showPassword={showSignUpPassword}
@@ -125,6 +141,7 @@ export default function AuthPage() {
                   form={signIn}
                   loading={loading}
                   onChange={setSignIn}
+                  onGoogleSignIn={submitGoogleSignIn}
                   onSubmit={submitSignIn}
                   onTogglePassword={() => setShowSignInPassword((current) => !current)}
                   showPassword={showSignInPassword}
@@ -143,11 +160,12 @@ type SignInFormProps = {
   loading: boolean;
   showPassword: boolean;
   onChange: (form: { email: string; password: string }) => void;
+  onGoogleSignIn: (credential: string) => void;
   onTogglePassword: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
-function SignInForm({ form, loading, showPassword, onChange, onTogglePassword, onSubmit }: SignInFormProps) {
+function SignInForm({ form, loading, showPassword, onChange, onGoogleSignIn, onTogglePassword, onSubmit }: SignInFormProps) {
   return (
     <form className="mx-auto w-full max-w-md" onSubmit={onSubmit}>
       <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#ef4444]">HNH Member</p>
@@ -185,6 +203,8 @@ function SignInForm({ form, loading, showPassword, onChange, onTogglePassword, o
         <ArrowRight className="size-4" />
       </Button>
 
+      <AuthDivider />
+      <GoogleSignInButton onCredential={onGoogleSignIn} />
     </form>
   );
 }
@@ -194,11 +214,12 @@ type SignUpFormProps = {
   loading: boolean;
   showPassword: boolean;
   onChange: (form: { userName: string; email: string; password: string }) => void;
+  onGoogleSignIn: (credential: string) => void;
   onTogglePassword: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 };
 
-function SignUpForm({ form, loading, showPassword, onChange, onTogglePassword, onSubmit }: SignUpFormProps) {
+function SignUpForm({ form, loading, showPassword, onChange, onGoogleSignIn, onTogglePassword, onSubmit }: SignUpFormProps) {
   return (
     <form className="mx-auto w-full max-w-md" onSubmit={onSubmit}>
       <p className="text-[11px] font-black uppercase tracking-[0.26em] text-[#ef4444]">HNH Member</p>
@@ -247,6 +268,8 @@ function SignUpForm({ form, loading, showPassword, onChange, onTogglePassword, o
         <ArrowRight className="size-4" />
       </Button>
 
+      <AuthDivider />
+      <GoogleSignInButton onCredential={onGoogleSignIn} />
     </form>
   );
 }
@@ -284,5 +307,15 @@ function PasswordToggle({ showPassword, onClick }: PasswordToggleProps) {
     >
       {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
     </button>
+  );
+}
+
+function AuthDivider() {
+  return (
+    <div className="my-5 flex items-center gap-3">
+      <span className="h-px flex-1 bg-white/10" />
+      <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Hoặc tiếp tục với</span>
+      <span className="h-px flex-1 bg-white/10" />
+    </div>
   );
 }

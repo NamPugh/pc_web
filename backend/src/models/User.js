@@ -16,7 +16,17 @@ const userSchema = new mongoose.Schema(
         },
         hashedPassword: {
             type: String,
-            required: true
+            default: ""
+        },
+        googleId: {
+            type: String,
+            unique: true,
+            sparse: true
+        },
+        authProviders: {
+            type: [String],
+            enum: ["local", "google"],
+            default: ["local"]
         },
         phone: {
             type: String,

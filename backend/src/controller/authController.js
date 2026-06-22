@@ -3,8 +3,34 @@ import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import Session from '../models/Session.js';
+import { OAuth2Client } from "google-auth-library";
 const ACCESS_TOKEN_TTL = '30m';
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
+
+const issueSession = async (res, user) => {
+    const accessToken = jwt.sign(
+        { userId: user._id },
+        process.env.ACCESS_TOKEN_SECRET,
+        { expiresIn: ACCESS_TOKEN_TTL }
+    );
+    const refreshToken = crypto.randomBytes(64).toString("hex");
+
+    await Session.create({
+        userId: user._id,
+        refreshToken,
+        expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL)
+    });
+
+    const isProduction = process.env.NODE_ENV === "production";
+    res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: isProduction,
+        sameSite: isProduction ? "none" : "lax",
+        maxAge: REFRESH_TOKEN_TTL
+    });
+
+    return accessToken;
+};
 
 export const signUp = async (req, res) => {
     try {
@@ -25,7 +51,8 @@ export const signUp = async (req, res) => {
         await User.create({
             userName, 
             hashedPassword,
-            email, 
+            email,
+            authProviders: ["local"]
         });
         // return
         return res.sendStatus(204);
@@ -47,30 +74,15 @@ export const signIn = async (req, res) => {
         if(!user) {
             return res.status(401).json({message: "Email hoặc password không chính xác"});
         }
+        if (!user.hashedPassword) {
+            return res.status(401).json({message: "Tài khoản này đang sử dụng đăng nhập Google"});
+        }
         // Kiểm tra password
         const passwordCorrect = await bcrypt.compare(password, user.hashedPassword);
         if(!passwordCorrect) {
             return res.status(401).json({message: "Email hoặc password không chính xác"});
         }
-        // nếu khớp, tạo accessToken với JWT
-        const accessToken = jwt.sign({userId: user._id}, 
-            process.env.ACCESS_TOKEN_SECRET, 
-            {expiresIn: ACCESS_TOKEN_TTL})
-        // tạo sesion mới để lưu refresh token
-        const refreshToken = crypto.randomBytes(64).toString("hex");
-        await Session.create({
-            userId: user._id,
-            refreshToken, 
-            expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL)
-        });
-        // trả refresh token về trong cookie
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: true,
-            sameSite: 'none',
-            maxAge: REFRESH_TOKEN_TTL,
-        })
-        // trả access token về trong cookie
+        const accessToken = await issueSession(res, user);
         return res.status(200).json({message: `User ${user.userName} đã logged in`, accessToken});
     } catch (error) {
         console.log("Lỗi khi gọi signIn", error);
@@ -93,5 +105,62 @@ export const signOut = async (req, res) => {
     } catch (error) {
         console.log("Lỗi khi gọi signOut", error);
         return res.status(500).json({message: "Lỗi hệ thống"});
+    }
+};
+
+export const googleSignIn = async (req, res) => {
+    try {
+        const credential = String(req.body.credential || "").trim();
+        const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+
+        if (!clientId) {
+            return res.status(503).json({ message: "Đăng nhập Google chưa được cấu hình trên máy chủ" });
+        }
+        if (!credential) {
+            return res.status(400).json({ message: "Thiếu thông tin xác thực Google" });
+        }
+
+        const client = new OAuth2Client(clientId);
+        const ticket = await client.verifyIdToken({
+            idToken: credential,
+            audience: clientId
+        });
+        const payload = ticket.getPayload();
+
+        if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+            return res.status(401).json({ message: "Tài khoản Google không hợp lệ hoặc email chưa được xác minh" });
+        }
+
+        const email = payload.email.toLowerCase().trim();
+        let user = await User.findOne({
+            $or: [{ googleId: payload.sub }, { email }]
+        });
+
+        if (user) {
+            if (user.googleId && user.googleId !== payload.sub) {
+                return res.status(409).json({ message: "Email này đã được liên kết với tài khoản Google khác" });
+            }
+            user.googleId = payload.sub;
+            user.authProviders = [...new Set([...(user.authProviders || []), "google"])];
+            if (!user.avatarUrl && payload.picture) user.avatarUrl = payload.picture;
+            await user.save();
+        } else {
+            user = await User.create({
+                userName: payload.name || email.split("@")[0],
+                email,
+                googleId: payload.sub,
+                authProviders: ["google"],
+                avatarUrl: payload.picture || ""
+            });
+        }
+
+        const accessToken = await issueSession(res, user);
+        return res.status(200).json({
+            message: "Đăng nhập Google thành công",
+            accessToken
+        });
+    } catch (error) {
+        console.error("Lỗi khi đăng nhập Google:", error);
+        return res.status(401).json({ message: "Không thể xác minh tài khoản Google" });
     }
 };
