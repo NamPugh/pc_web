@@ -17,6 +17,7 @@ import {
   PanelLeftOpen,
   Search,
   Store,
+  UsersRound,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -31,15 +32,17 @@ import DealManager from "@/components/admin/DealManager";
 import HomeSectionManager from "@/components/admin/HomeSectionManager";
 import OrderManager from "@/components/admin/OrderManager";
 import SiteSettingManager from "@/components/admin/SiteSettingManager";
+import UserManager from "@/components/admin/UserManager";
 import { useAuthStore } from "@/store/auth";
 import type { Order, OrderStats } from "@/types";
 
-type AdminView = "overview" | "orders" | "catalog" | "deals" | "banners" | "home-sections" | "about";
+type AdminView = "overview" | "orders" | "catalog" | "users" | "deals" | "banners" | "home-sections" | "about";
 
 const navItems: Array<{ id: AdminView; label: string; helper: string; icon: typeof Gauge }> = [
   { id: "overview", label: "Tổng quan", helper: "Doanh thu & vận hành", icon: Gauge },
   { id: "orders", label: "Đơn hàng", helper: "Xử lý và giao hàng", icon: ClipboardList },
   { id: "catalog", label: "Sản phẩm", helper: "Catalog & tồn kho", icon: Package },
+  { id: "users", label: "Người dùng", helper: "Tài khoản & phân quyền", icon: UsersRound },
   { id: "deals", label: "Deal giờ vàng", helper: "Giá, thời gian & số lượng", icon: BadgePercent },
   { id: "banners", label: "Banner", helper: "Giao diện website", icon: Images },
   { id: "home-sections", label: "Danh mục trang chủ", helper: "Banner & sản phẩm hiển thị", icon: PanelsTopLeft },
@@ -298,6 +301,7 @@ export default function AdminPage() {
               {view === "overview" ? <AdminOverview loading={loadingStats} onOpenOrders={openOrders} stats={stats} /> : null}
               {view === "orders" ? <OrderManager initialStatus={orderFilter} key={orderFilter} loading={loadingOrders} onOrderUpdated={handleOrderUpdated} onReload={reloadOrdersAndStats} orders={orders} /> : null}
               {view === "catalog" ? <CatalogManager /> : null}
+              {view === "users" ? <UserManager /> : null}
               {view === "deals" ? <DealManager /> : null}
               {view === "banners" ? <BannerManager /> : null}
               {view === "home-sections" ? <HomeSectionManager /> : null}

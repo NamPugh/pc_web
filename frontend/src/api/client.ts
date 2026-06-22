@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, Order, OrderStats, PCBuild, Product, ProductType, Review, SiteSetting, User } from "@/types";
+import type { ApiItem, ApiList, Banner, Brand, Cart, Category, FlashSale, HomeSection, Order, OrderStats, PCBuild, Product, ProductType, Review, SiteSetting, User, UserSummary } from "@/types";
 
 export const api = axios.create({
   baseURL: "/api",
@@ -106,6 +106,10 @@ export const flashSaleApi = {
 };
 
 export const adminApi = {
+  users: (params?: { page?: number; limit?: number; search?: string; role?: string; status?: string }) =>
+    api.get<ApiList<User> & { summary: UserSummary }>("/users", { params }),
+  updateUser: (id: string, payload: { role?: User["role"]; isActive?: boolean }) =>
+    api.patch<ApiItem<User>>(`/users/${id}/admin`, payload),
   orders: () => api.get<ApiList<Order>>("/orders"),
   orderStats: () => api.get<ApiItem<OrderStats>>("/orders/stats"),
   updateOrder: (

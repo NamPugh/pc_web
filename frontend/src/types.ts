@@ -5,7 +5,18 @@ export type User = {
   phone?: string;
   address?: string;
   role: "user" | "admin";
+  isActive?: boolean;
+  authProviders?: Array<"local" | "google">;
   avatarUrl?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UserSummary = {
+  totalUsers: number;
+  totalAdmins: number;
+  activeUsers: number;
+  inactiveUsers: number;
 };
 
 export type Category = {

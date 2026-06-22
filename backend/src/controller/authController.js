@@ -8,11 +8,13 @@ const ACCESS_TOKEN_TTL = '30m';
 const REFRESH_TOKEN_TTL = 14 * 24 * 60 * 60 * 1000;
 
 const issueSession = async (res, user) => {
+    // Tạo access token
     const accessToken = jwt.sign(
         { userId: user._id },
         process.env.ACCESS_TOKEN_SECRET,
         { expiresIn: ACCESS_TOKEN_TTL }
     );
+    // Tạo refresh token
     const refreshToken = crypto.randomBytes(64).toString("hex");
 
     await Session.create({
@@ -20,7 +22,7 @@ const issueSession = async (res, user) => {
         refreshToken,
         expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL)
     });
-
+    // Kiểm tra môi trường production
     const isProduction = process.env.NODE_ENV === "production";
     res.cookie("refreshToken", refreshToken, {
         httpOnly: true,
@@ -40,7 +42,7 @@ export const signUp = async (req, res) => {
                 "Không thể thiếu username, password, email"
             });
         }
-        // Kiểm tra xem username tồn tại chưa
+        // Kiểm tra xem rmail tồn tại chưa
         const duplicate = await User.findOne({email});
         if(duplicate) {
             return res.status(409).json({message: "email đã được sử dụng"});
@@ -73,6 +75,9 @@ export const signIn = async (req, res) => {
         const user = await User.findOne({email});
         if(!user) {
             return res.status(401).json({message: "Email hoặc password không chính xác"});
+        }
+        if (user.isActive === false) {
+            return res.status(403).json({ message: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên" });
         }
         if (!user.hashedPassword) {
             return res.status(401).json({message: "Tài khoản này đang sử dụng đăng nhập Google"});
@@ -137,6 +142,9 @@ export const googleSignIn = async (req, res) => {
         });
 
         if (user) {
+            if (user.isActive === false) {
+                return res.status(403).json({ message: "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên" });
+            }
             if (user.googleId && user.googleId !== payload.sub) {
                 return res.status(409).json({ message: "Email này đã được liên kết với tài khoản Google khác" });
             }
