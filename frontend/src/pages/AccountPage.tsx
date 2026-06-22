@@ -123,9 +123,7 @@ export default function AccountPage() {
       <div className="overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="grid lg:grid-cols-[280px_minmax(0,1fr)]">
           <div className="bg-[#29324e] p-6 text-white sm:p-7">
-            <div className="grid size-16 place-items-center rounded-xl bg-[#3278f6]">
-              <UserRound className="size-9" />
-            </div>
+            <UserRound className="size-16 text-white" strokeWidth={1.8} />
             <h2 className="mt-5 break-words text-2xl font-black">{user.userName}</h2>
             <p className="mt-2 break-all text-sm text-white/60">{user.email}</p>
           </div>

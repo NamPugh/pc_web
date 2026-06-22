@@ -36,7 +36,7 @@ docker compose up -d --build
 Website chạy tại:
 
 ```text
-http://localhost:8080
+http://localhost:5173
 ```
 
 Frontend mặc định chuyển `/api` và `/uploads` tới:
@@ -48,7 +48,7 @@ http://host.docker.internal:5000
 Nếu backend nằm trên máy chủ khác, tạo `frontend/.env`:
 
 ```env
-FRONTEND_PORT=8080
+FRONTEND_PORT=5173
 BACKEND_UPSTREAM=http://192.168.1.20:5000
 ```
 
@@ -85,7 +85,7 @@ Không dùng `docker compose down -v` cho backend nếu muốn giữ các ảnh 
 Trong `backend/.env`, Return URL khi chạy Docker local nên là:
 
 ```env
-VNPAY_RETURN_URL=http://localhost:8080/payment/vnpay-return
+VNPAY_RETURN_URL=http://localhost:5173/payment/vnpay-return
 ```
 
 Khi triển khai thật, đổi sang domain frontend. IPN đăng ký với VNPay:

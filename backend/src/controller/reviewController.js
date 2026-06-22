@@ -33,6 +33,7 @@ export const createReview = async (req, res) => {
     });
 
     await updateProductRating(productId);
+    await review.populate("user", "userName avatarUrl");
 
     res.status(201).json({ success: true, message: "Đánh giá thành công", data: review });
   } catch (error) {
@@ -43,7 +44,7 @@ export const createReview = async (req, res) => {
 export const getProductReviews = async (req, res) => {
   try {
     const reviews = await Review.find({ product: req.params.productId })
-      .populate("user", "fullName avatar")
+      .populate("user", "userName avatarUrl")
       .sort({ createdAt: -1 });
 
     res.json({ success: true, count: reviews.length, data: reviews });

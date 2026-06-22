@@ -11,7 +11,7 @@ services:
       BACKEND_UPSTREAM: ${BACKEND_UPSTREAM:-http://host.docker.internal:5000}
       NGINX_ENVSUBST_FILTER: BACKEND_UPSTREAM
     ports:
-      - "${FRONTEND_PORT:-8080}:80"
+      - "${FRONTEND_PORT:-5173}:80"
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:

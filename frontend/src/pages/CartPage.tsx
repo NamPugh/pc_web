@@ -3,7 +3,7 @@ import {
   Check,
   Minus,
   Plus,
-  ShoppingBag,
+  ShoppingCart,
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -249,9 +249,7 @@ export default function CartPage() {
           ) : !cart?.items.length ? (
             <div className="grid min-h-80 place-items-center border border-[#e5e7eb] bg-white p-8 text-center shadow-sm">
               <div>
-                <span className="mx-auto grid size-20 place-items-center rounded-full bg-[#eef4ff] text-[#3278f6]">
-                  <ShoppingBag className="size-9" />
-                </span>
+                <ShoppingCart className="mx-auto size-16 text-[#3278f6]" strokeWidth={1.8} />
                 <h2 className="mt-5 text-xl font-black text-[#29324e]">Giỏ hàng đang trống</h2>
                 <p className="mt-2 text-sm text-[#8d94ac]">Khám phá sản phẩm và thêm món bạn thích vào đây.</p>
                 <Button className="mt-5 rounded-none bg-[#3278f6] hover:bg-[#2860c5]" asChild>

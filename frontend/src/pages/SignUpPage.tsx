@@ -65,7 +65,7 @@ export default function SignUpPage() {
             <label className="block">
               <span className="text-sm font-bold text-[#344054]">Tên người dùng</span>
               <span className="relative mt-2 block">
-                <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
+                <UserRound className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#667085]" strokeWidth={2.4} />
                 <input
                   autoComplete="name"
                   className={inputClassName}
@@ -80,7 +80,7 @@ export default function SignUpPage() {
             <label className="block">
               <span className="text-sm font-bold text-[#344054]">Địa chỉ email</span>
               <span className="relative mt-2 block">
-                <Mail className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
+                <Mail className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#667085]" strokeWidth={2.4} />
                 <input
                   autoComplete="email"
                   className={inputClassName}
@@ -96,7 +96,7 @@ export default function SignUpPage() {
             <label className="block">
               <span className="text-sm font-bold text-[#344054]">Mật khẩu</span>
               <span className="relative mt-2 block">
-                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-[#98a2b3]" />
+                <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-[#667085]" strokeWidth={2.4} />
                 <input
                   autoComplete="new-password"
                   className={`${inputClassName} pr-12`}
@@ -113,7 +113,7 @@ export default function SignUpPage() {
                   onClick={() => setShowPassword((current) => !current)}
                   type="button"
                 >
-                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  {showPassword ? <EyeOff className="size-5" strokeWidth={2.4} /> : <Eye className="size-5" strokeWidth={2.4} />}
                 </button>
               </span>
             </label>

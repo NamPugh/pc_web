@@ -427,20 +427,20 @@ export default function BuildPcPage() {
 
           <aside className="p-5 xl:sticky xl:top-40">
             <h3 className="text-xl font-black uppercase text-[#1d2939]">Xác nhận mua hàng</h3>
-            <label className="mt-4 block"><span className="mb-1.5 block text-xs font-bold text-[#667085]">Tên cấu hình</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setName(event.target.value)} value={name} /></label>
-            <label className="mt-3 block"><span className="mb-1.5 block text-xs font-bold text-[#667085]">Ghi chú</span><textarea className="min-h-20 w-full border border-[#d0d5dd] p-3 text-sm outline-none focus:border-[#3278f6]" onChange={(event) => setNote(event.target.value)} placeholder="Nhu cầu sử dụng..." value={note} /></label>
+            <label className="mt-4 block"><span className="mb-1.5 block text-xs font-black text-[#475467]">Tên cấu hình</span><input className="h-11 w-full border border-[#d0d5dd] px-3 text-sm font-semibold outline-none focus:border-[#3278f6]" onChange={(event) => setName(event.target.value)} value={name} /></label>
+            <label className="mt-3 block"><span className="mb-1.5 block text-xs font-black text-[#475467]">Ghi chú</span><textarea className="min-h-20 w-full border border-[#d0d5dd] p-3 text-sm font-medium outline-none focus:border-[#3278f6]" onChange={(event) => setNote(event.target.value)} placeholder="Nhu cầu sử dụng..." value={note} /></label>
 
             <div className="mt-4 border border-[#e5e7eb] p-4">
               <h4 className="font-black text-[#344054]">Chi phí dự tính</h4>
-              <div className="mt-4 space-y-3 text-sm">
-                <div className="flex justify-between"><span className="text-[#667085]">Tạm tính</span><b>{currency.format(subtotal)}</b></div>
-                <div className="flex justify-between text-[#15803d]"><span>Khuyến mãi dự kiến</span><b>-{currency.format(promotion)}</b></div>
+              <div className="mt-4 space-y-3 text-sm font-semibold">
+                <div className="flex justify-between"><span className="font-bold text-[#475467]">Tạm tính</span><b className="font-black">{currency.format(subtotal)}</b></div>
+                <div className="flex justify-between font-bold text-[#15803d]"><span>Khuyến mãi dự kiến</span><b className="font-black">-{currency.format(promotion)}</b></div>
                 <div className="flex items-end justify-between border-t border-[#e5e7eb] pt-4"><span className="font-black text-[#344054]">Tổng chi phí</span><strong className="text-2xl font-black text-[#fb4e4e]">{currency.format(total)}</strong></div>
               </div>
             </div>
 
             <Button className="mt-4 h-12 w-full rounded-none bg-[#3278f6] font-black hover:bg-[#2860c5]" disabled={!chosenProducts.length || adding} onClick={() => void addCurrentToCart()} type="button">{adding ? <LoaderCircle className="size-4 animate-spin" /> : <ShoppingCart className="size-5" />}Tiến hành thanh toán</Button>
-            <div className="mt-4 space-y-2 text-xs font-semibold text-[#667085]">
+            <div className="mt-4 space-y-2 text-xs font-bold text-[#475467]">
               <p className="flex items-center gap-2"><Check className="size-4 text-[#16a34a]" />Hỗ trợ trả góp 0%</p>
               <p className="flex items-center gap-2"><Check className="size-4 text-[#16a34a]" />Giao hàng nhanh toàn quốc</p>
               <p className="flex items-center gap-2"><Check className="size-4 text-[#16a34a]" />Hỗ trợ kỹ thuật online</p>
