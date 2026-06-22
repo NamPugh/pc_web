@@ -271,7 +271,7 @@ export const updateProduct = async (req, res) => {
 
         if (!product) {
             return res.status(404).json({
-                success: true,
+                success: false,
                 message: "Không tìm thấy sản phẩm"
             });
         }

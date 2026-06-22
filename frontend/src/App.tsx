@@ -9,7 +9,8 @@ import CartPage from "@/pages/CartPage";
 import HomePage from "@/pages/HomePage";
 import OrdersPage from "@/pages/OrdersPage";
 import ProductDetailPage from "@/pages/ProductDetailPage";
-import AuthPage from "@/pages/AuthPage";
+import SignInPage from "@/pages/SignInPage";
+import SignUpPage from "@/pages/SignUpPage";
 import VnPayReturnPage from "@/pages/VnPayReturnPage";
 
 function App() {
@@ -28,10 +29,8 @@ function App() {
             <Route path="/payment/vnpay-return" element={<VnPayReturnPage />} />
           </Route>
           <Route path="/admin" element={<AdminPage />} />
-          <Route element={<AuthPage />}>
-            <Route path="/signin" />
-            <Route path="/signup" />
-          </Route>
+          <Route path="/signin" element={<SignInPage />} />
+          <Route path="/signup" element={<SignUpPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

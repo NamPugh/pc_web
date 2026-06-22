@@ -258,6 +258,19 @@
   animation-delay: 700ms;
 }
 
+@keyframes glow-red {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(220, 38, 38, 0.4), 0 0 30px rgba(220, 38, 38, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(220, 38, 38, 0.7), 0 0 50px rgba(220, 38, 38, 0.4);
+  }
+}
+
+.animate-glow-red {
+  animation: glow-red 2.5s infinite ease-in-out;
+}
+
 .tailadmin-admin {
   font-family: "Chakra Petch", Arial, Helvetica, sans-serif;
 }

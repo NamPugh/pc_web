@@ -15,7 +15,7 @@ type GoogleIdentity = {
         parent: HTMLElement,
         options: {
           type: "standard";
-          theme: "filled_black";
+          theme: "outline";
           size: "large";
           shape: "rectangular";
           text: "continue_with";
@@ -101,7 +101,7 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
         }
         window.google.accounts.id.renderButton(container, {
           type: "standard",
-          theme: "filled_black",
+          theme: "outline",
           size: "large",
           shape: "rectangular",
           text: "continue_with",
@@ -120,7 +120,7 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
 
   if (!clientId) {
     return (
-      <div className="flex h-11 items-center justify-center rounded-lg border border-white/10 bg-white/[0.04] px-3 text-center text-xs text-white/35">
+      <div className="flex h-[52px] items-center justify-center rounded-lg border border-[#e4e7ec] bg-[#f9fafb] px-3 text-center text-xs text-[#98a2b3]">
         Đăng nhập Google chưa được cấu hình
       </div>
     );
@@ -128,11 +128,16 @@ export default function GoogleSignInButton({ onCredential }: GoogleSignInButtonP
 
   if (loadError) {
     return (
-      <div className="flex h-11 items-center justify-center rounded-lg border border-red-500/20 bg-red-500/5 px-3 text-center text-xs text-red-300/80">
+      <div className="flex h-[52px] items-center justify-center rounded-lg border border-red-200 bg-red-50 px-3 text-center text-xs text-red-600">
         Không thể tải đăng nhập Google
       </div>
     );
   }
 
-  return <div className="min-h-11 w-full overflow-hidden rounded-lg" ref={containerRef} />;
+  return (
+    <div
+      className="flex min-h-[52px] w-full items-center justify-center rounded-lg [&>div]:!w-full [&_iframe]:!w-full"
+      ref={containerRef}
+    />
+  );
 }
